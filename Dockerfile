@@ -12,6 +12,6 @@ COPY . .
 
 RUN pnpm build
 
-EXPOSE 3000
+EXPOSE 8080
 
-CMD ["pnpm", "start", "--hostname", "0.0.0.0", "--port", "3000"]
+CMD ["sh", "-c", "pnpm start --hostname 0.0.0.0 --port ${PORT:-8080}"]

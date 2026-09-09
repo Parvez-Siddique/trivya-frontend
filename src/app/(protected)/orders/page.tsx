@@ -3,8 +3,7 @@ import {getCustomerSession} from "@/lib/session";
 import {getCustomerOrders} from "@/app/(public)/my-orders/action";
 
 export default async function Page() {
-  const customerSession = await getCustomerSession();
-  const customerOrders = await getCustomerOrders({ page: 1, page_size: 10, customer_id: customerSession?.id });
+  const customerOrders = await getCustomerOrders({ page: 1, page_size: 10 });
 
   return <OrdersList customerOrders={customerOrders.data} />;
 }
