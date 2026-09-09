@@ -10,6 +10,9 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
+ARG BACKEND_URL
+ENV BACKEND_URL=$BACKEND_URL
+
 RUN pnpm build
 
 EXPOSE 8080
