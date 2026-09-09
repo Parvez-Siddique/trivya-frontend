@@ -13,7 +13,6 @@ import Datatable, {
   Pagination,
 } from "@/components/ui/datatable";
 
-import { SessionUser } from "@/lib/session";
 
 type CustomerOrdersProps = {
   customerOrders: CustomerOrderListDTO[] | undefined | null;
