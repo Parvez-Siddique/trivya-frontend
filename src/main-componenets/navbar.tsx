@@ -1,106 +1,15 @@
 "use client";
 
-import { LogOut, Menu, ShoppingBag, User, X } from "lucide-react";
+import { Menu, ShoppingBag, X } from "lucide-react";
 import { useState } from "react";
 import {useRouter} from "next/navigation";
-import UserCreateModal from "../components/ui/user-create-modal";
-import {createUser, CreateUserPayload, logoutCustomer,
-   loginCustomer, LoginUserPayload} from "@/app/(public)/customer/action";
-import { toast } from "sonner";
-
 export default function Navbar({userSession}: {userSession: any}) {
 
   const router = useRouter()
-  const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mode, setMode] = useState<"Create" | "Login">("Login");
-  const [userCreateForm, setUserCreateForm] = useState<CreateUserPayload>({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phoneNumber: "",
-          username: "",
-          password: "",
-          user_type: "CUSTOMER"
-        });
-
-  const [userLoginForm, setUserLoginForm] = useState<LoginUserPayload>({username: "", password: ""});
 
   const redirectProducts = () => {router.push("/shop-products")}
 
-  // const redirectUserCreate = () => {
-  //    setOpen(true);
-  // }
-
-  const handleCreateUser = async () => {
-    const response = await createUser(userCreateForm)
-
-    if(!response.success) {
-      toast.error(response.error || "Failed to create user");
-      return;
-    } else {
-      toast.success("User created successfully");
-      setUserCreateForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phoneNumber: "",
-        username: "",
-        password: "",
-        user_type: "CUSTOMER"
-      })
-      setOpen(false);
-      router.refresh();
-    }
-  }
-
-  const handleLoginCustomer = async () => {
-    const response = await loginCustomer(userLoginForm)
-
-    if(!response.success) {
-      toast.error(response.error || "Login failed");
-      return;
-    } else {
-      toast.success("Login successful");
-      setUserLoginForm({
-        username: "",
-        password: ""
-      })
-      setOpen(false);
-      router.refresh();
-    }
-  }
-
-  const handleLogoutCustomer = async () => {
-    const response = await logoutCustomer()
-
-    if(!response.success) {
-      toast.error("Logout failed");
-      return;
-    } else {
-      toast.success("Logout successful");
-      setUserLoginForm({
-        username: "",
-        password: ""
-      })
-      setOpen(false);
-      router.refresh();
-    }
-  }
-
-  const handleClose = async () => {
-    setOpen(false);
-
-    setUserCreateForm({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phoneNumber: "",
-      username: "",
-      password: "",
-      user_type: "CUSTOMER",
-    });
-  }
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-primary-background dark:bg-black border-b border-gray-200 dark:border-gray-600">
@@ -242,20 +151,6 @@ export default function Navbar({userSession}: {userSession: any}) {
           </div>
         )}
       </div>
-
-      <UserCreateModal
-        open={open}
-        setOpen={setOpen}
-        mode={mode}
-        setMode={setMode}
-        userCreateForm={userCreateForm}
-        setUserCreateForm={setUserCreateForm}
-        userLoginForm={userLoginForm}
-        setUserLoginForm={setUserLoginForm}
-        onUserCreated={handleCreateUser}
-        onCustomerLogin={handleLoginCustomer}
-        handleClose={handleClose}
-      />
     </nav>
   );
 }

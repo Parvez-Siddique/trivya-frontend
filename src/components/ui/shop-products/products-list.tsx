@@ -17,11 +17,16 @@ export default function ShopProducts({ customerSession }: { customerSession?: an
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"Create" | "Login">("Create");
   const [userCreateForm, setUserCreateForm] = useState<CreateCustomerPayload>({
-          firstName: "",
-          lastName: "",
-          email: "",
-          phoneNumber: "",
-          user_type: "CUSTOMER"
+            firstName: "",
+            lastName: "",
+            email: "",
+            phoneNumber: "",
+            user_type: "CUSTOMER",
+            streetName: "",
+            area: "",
+            city: "",
+            state: "",
+            pincode: "",
         });
 
   const [loading, setLoading] = useState(true);

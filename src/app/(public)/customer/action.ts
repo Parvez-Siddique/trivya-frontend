@@ -9,8 +9,6 @@ export type CreateUserPayload = {
   lastName: string;
   email: string;
   phoneNumber: string;
-  username: string;
-  password: string;
   user_type: "ADMIN" | "CUSTOMER";
 };
 
