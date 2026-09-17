@@ -1,18 +1,24 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import {
-  CreateUserPayload,
-  LoginUserPayload,
-} from "@/app/(public)/customer/action";
+import {CreateCustomerPayload} from "@/app/(public)/shop-products/action";
+
+import {LoginUserPayload} from "@/app/(public)/customer/action"
 
 interface UserCreateModalProps {
   open: boolean;
@@ -21,23 +27,31 @@ interface UserCreateModalProps {
   mode: "Create" | "Login";
   setMode: React.Dispatch<React.SetStateAction<"Create" | "Login">>;
 
-  userCreateForm: CreateUserPayload | undefined;
-  setUserCreateForm: React.Dispatch<React.SetStateAction<CreateUserPayload>>;
+  userCreateForm: CreateCustomerPayload | undefined;
 
-  userLoginForm ? : LoginUserPayload | undefined;
-  setUserLoginForm?: React.Dispatch<React.SetStateAction<LoginUserPayload>>;
+  setUserCreateForm: React.Dispatch<
+    React.SetStateAction<CreateCustomerPayload>
+  >;
 
-  onUserCreated?: () => void;
+  userLoginForm?: LoginUserPayload | undefined;
+
+  setUserLoginForm?: React.Dispatch<
+    React.SetStateAction<LoginUserPayload>
+  >;
+
+  onOrderPlaced?: () => void | Promise<void>;
   onCustomerLogin?: () => void;
 
   handleClose?: () => void;
-  singleTab? : boolean;
+
+  singleTab?: boolean;
   singleTabName?: "Create" | "Login";
 }
 
 export default function UserCreateModal({
   open,
   setOpen,
+
   mode,
   setMode,
 
@@ -47,49 +61,57 @@ export default function UserCreateModal({
   userLoginForm,
   setUserLoginForm,
 
-  onUserCreated,
+  onOrderPlaced,
   onCustomerLogin,
 
   handleClose,
 
   singleTab,
-
-  singleTabName
-
+  singleTabName,
 }: UserCreateModalProps) {
   const [loading, setLoading] = useState(false);
 
   const isSingleTab = singleTab === true;
 
-  const showRegisterTab = !isSingleTab || singleTabName === "Create";
-
-  const showLoginTab = !isSingleTab || singleTabName === "Login";
+  // --------------------------------------------------
+  // Single tab handling
+  // --------------------------------------------------
 
   useEffect(() => {
-
     if (!singleTab || !singleTabName) {
       return;
     }
 
-    const requiredMode = singleTabName === "Create" ? "Create" : "Login";
+    const requiredMode =
+      singleTabName === "Create"
+        ? "Create"
+        : "Login";
 
     if (mode !== requiredMode) {
       setMode(requiredMode);
     }
-  }, [singleTab, singleTabName, mode, setMode]);
+  }, [
+    singleTab,
+    singleTabName,
+    mode,
+    setMode,
+  ]);
 
   // --------------------------------------------------
   // Empty forms
   // --------------------------------------------------
 
-  const emptyCreateForm: CreateUserPayload = {
+  const emptyCreateForm: CreateCustomerPayload = {
     firstName: "",
     lastName: "",
     email: "",
     phoneNumber: "",
-    username: "",
-    password: "",
     user_type: "CUSTOMER",
+    streetName: "",
+    area: "",
+    city: "",
+    state: "",
+    pincode: "",
   };
 
   const emptyLoginForm: LoginUserPayload = {
@@ -98,7 +120,7 @@ export default function UserCreateModal({
   };
 
   // --------------------------------------------------
-  // Register form change
+  // Create form change
   // --------------------------------------------------
 
   const handleCreateChange = (
@@ -112,7 +134,13 @@ export default function UserCreateModal({
     }));
   };
 
-  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --------------------------------------------------
+  // Login form change
+  // --------------------------------------------------
+
+  const handleLoginChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
 
     if (!setUserLoginForm) {
@@ -125,23 +153,25 @@ export default function UserCreateModal({
     }));
   };
 
-  const handleModeChange = (newMode: "Create" | "Login") => {
+  // --------------------------------------------------
+  // Mode change
+  // --------------------------------------------------
 
+  const handleModeChange = (
+    newMode: "Create" | "Login"
+  ) => {
     if (singleTab) {
       return;
     }
+
     setMode(newMode);
 
-    // Clear both forms when switching tabs
     setUserCreateForm(emptyCreateForm);
     setUserLoginForm?.(emptyLoginForm);
   };
 
-  // --------------------------------------------------
-  // Submit
-  // --------------------------------------------------
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+
     e.preventDefault();
 
     try {
@@ -152,14 +182,10 @@ export default function UserCreateModal({
           return;
         }
 
-        onUserCreated?.();
+       await onOrderPlaced?.();
 
         return;
       }
-
-      // ----------------------------------------------
-      // LOGIN
-      // ----------------------------------------------
 
       if (mode === "Login") {
         if (!userLoginForm) {
@@ -168,11 +194,10 @@ export default function UserCreateModal({
 
         onCustomerLogin?.();
       }
-
     } catch (error) {
       console.error(
         mode === "Create"
-          ? "Create user error:"
+          ? "Create customer error:"
           : "Login error:",
         error
       );
@@ -192,11 +217,9 @@ export default function UserCreateModal({
 
     setOpen(false);
 
-    // Clear both forms
     setUserCreateForm(emptyCreateForm);
     setUserLoginForm?.(emptyLoginForm);
 
-    // Optional parent close handler
     handleClose?.();
   };
 
@@ -211,21 +234,30 @@ export default function UserCreateModal({
         }
       }}
     >
-      <DialogContent className="sm:max-w-[550px]">
+      <DialogContent className="sm:max-w-[650px]">
         <DialogHeader>
           <DialogTitle>
-            {mode === "Create" ? "Register User" : "Login"}
+            {mode === "Create"
+              ? "Enter your Details"
+              : "Login"}
           </DialogTitle>
         </DialogHeader>
+
+        {/* ================================================= */}
+        {/* TABS */}
+        {/* ================================================= */}
 
         {!singleTab && (
           <div className="grid grid-cols-2 border-b">
 
-            {/* Register Tab */}
+            {/* Create Tab */}
+
             <button
               type="button"
               disabled={loading}
-              onClick={() => handleModeChange("Create")}
+              onClick={() =>
+                handleModeChange("Create")
+              }
               className={`
                 py-3
                 text-sm
@@ -241,14 +273,17 @@ export default function UserCreateModal({
                 }
               `}
             >
-              Register
+              Create
             </button>
 
             {/* Login Tab */}
+
             <button
               type="button"
               disabled={loading}
-              onClick={() => handleModeChange("Login")}
+              onClick={() =>
+                handleModeChange("Login")
+              }
               className={`
                 py-3
                 text-sm
@@ -266,22 +301,15 @@ export default function UserCreateModal({
             >
               Login
             </button>
-
           </div>
         )}
 
-        {/* ================================================= */}
-        {/* FORM */}
-        {/* ================================================= */}
-
         <form onSubmit={handleSubmit} className="space-y-5 pt-2">
-
-          {/* ================================================= */}
-          {/* REGISTER FORM */}
-          {/* ================================================= */}
 
           {mode === "Create" && (
             <div className="grid grid-cols-2 gap-5">
+
+              {/* First Name */}
 
               <div className="space-y-2">
                 <Label htmlFor="register-firstName">
@@ -298,11 +326,11 @@ export default function UserCreateModal({
                     userCreateForm?.firstName ?? ""
                   }
                   onChange={handleCreateChange}
-                  required
                 />
               </div>
 
               {/* Last Name */}
+
               <div className="space-y-2">
                 <Label htmlFor="register-lastName">
                   Last Name
@@ -318,11 +346,11 @@ export default function UserCreateModal({
                     userCreateForm?.lastName ?? ""
                   }
                   onChange={handleCreateChange}
-                  required
                 />
               </div>
 
               {/* Email */}
+
               <div className="space-y-2">
                 <Label htmlFor="register-email">
                   Email
@@ -338,19 +366,19 @@ export default function UserCreateModal({
                     userCreateForm?.email ?? ""
                   }
                   onChange={handleCreateChange}
-                  required
                 />
               </div>
 
               {/* Phone Number */}
+
               <div className="space-y-2">
                 <Label htmlFor="register-phoneNumber">
                   Phone Number
                 </Label>
 
                 <Input
-                  id="register-phoneNumber"
                   className="h-10"
+                  id="register-phoneNumber"
                   name="phoneNumber"
                   type="tel"
                   placeholder="Enter phone number"
@@ -361,62 +389,119 @@ export default function UserCreateModal({
                 />
               </div>
 
-              {/* Username */}
+              {/* Street Name */}
+
               <div className="space-y-2">
-                <Label htmlFor="register-username">
-                  Username
+                <Label htmlFor="register-streetName">
+                  Street Name
                 </Label>
 
                 <Input
                   className="h-10"
-                  id="register-username"
-                  name="username"
+                  id="register-streetName"
+                  name="streetName"
                   type="text"
-                  placeholder="Enter username"
+                  placeholder="Enter street name"
                   value={
-                    userCreateForm?.username ?? ""
+                    userCreateForm?.streetName ?? ""
                   }
                   onChange={handleCreateChange}
-                  required
                 />
               </div>
 
-              {/* Password */}
+              {/* Area */}
+
               <div className="space-y-2">
-                <Label htmlFor="register-password">
-                  Password
+                <Label htmlFor="register-area">
+                  Area
                 </Label>
 
                 <Input
-                  id="register-password"
                   className="h-10"
-                  name="password"
-                  type="password"
-                  placeholder="Enter password"
+                  id="register-area"
+                  name="area"
+                  type="text"
+                  placeholder="Enter area"
                   value={
-                    userCreateForm?.password ?? ""
+                    userCreateForm?.area ?? ""
                   }
                   onChange={handleCreateChange}
-                  required
-                  minLength={8}
                 />
+              </div>
 
-                <p className="text-xs text-muted-foreground">
-                  Password must contain at least 8 characters.
-                </p>
+              {/* City */}
+
+              <div className="space-y-2">
+                <Label htmlFor="register-city">
+                  City
+                </Label>
+
+                <Input
+                  className="h-10"
+                  id="register-city"
+                  name="city"
+                  type="text"
+                  placeholder="Enter city"
+                  value={
+                    userCreateForm?.city ?? ""
+                  }
+                  onChange={handleCreateChange}
+                />
+              </div>
+
+              {/* State */}
+
+              <div className="space-y-2">
+                <Label htmlFor="register-state">
+                  State
+                </Label>
+
+                <Input
+                  className="h-10"
+                  id="register-state"
+                  name="state"
+                  type="text"
+                  placeholder="Enter state"
+                  value={
+                    userCreateForm?.state ?? ""
+                  }
+                  onChange={handleCreateChange}
+                />
+              </div>
+
+              {/* Pincode */}
+
+              <div className="space-y-2">
+                <Label htmlFor="register-pincode">
+                  Pincode
+                </Label>
+
+                <Input
+                  className="h-10"
+                  id="register-pincode"
+                  name="pincode"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Enter pincode"
+                  value={
+                    userCreateForm?.pincode ?? ""
+                  }
+                  onChange={handleCreateChange}
+                />
               </div>
 
             </div>
           )}
 
           {/* ================================================= */}
-          {/* LOGIN FORM */}
+          {/* LOGIN */}
           {/* ================================================= */}
 
           {mode === "Login" && (
             <div className="space-y-5">
 
               {/* Username */}
+
               <div className="space-y-2">
                 <Label htmlFor="login-username">
                   Username
@@ -437,6 +522,7 @@ export default function UserCreateModal({
               </div>
 
               {/* Password */}
+
               <div className="space-y-2">
                 <Label htmlFor="login-password">
                   Password
@@ -466,6 +552,7 @@ export default function UserCreateModal({
           <DialogFooter className="pt-3">
 
             {/* Cancel */}
+
             <Button
               type="button"
               variant="outline"
@@ -477,6 +564,7 @@ export default function UserCreateModal({
             </Button>
 
             {/* Submit */}
+
             <Button
               type="submit"
               disabled={loading}
@@ -488,11 +576,8 @@ export default function UserCreateModal({
                 cursor-pointer
               "
             >
-
               {loading && (
-                <Loader2
-                  className="h-4 w-4 animate-spin"
-                />
+                <Loader2 className="h-4 w-4 animate-spin" />
               )}
 
               {loading
@@ -500,9 +585,8 @@ export default function UserCreateModal({
                   ? "Creating..."
                   : "Logging in..."
                 : mode === "Create"
-                  ? "Register"
+                  ? "Place Order"
                   : "Login"}
-
             </Button>
 
           </DialogFooter>

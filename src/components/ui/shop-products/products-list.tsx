@@ -3,26 +3,24 @@
 import { useEffect, useState } from "react";
 import {ShoppingBag, Plus, Minus, ArrowLeft, ArrowRight} from "lucide-react";
 import {getProductsPublicList, Product} from "@/app/(protected)/product/action";
-import {createOrder, CreateOrderPayload, OrderDetails} from "@/app/(public)/shop-products/action";
+import {createOrder, CreateOrderPayload,
+   OrderDetails, CreateCustomerPayload,
+    placeOrder, PlaceOrderPayload} from "@/app/(public)/shop-products/action";
 import { toast } from "sonner";
 import {useRouter} from "next/navigation";
 import UserCreateModal from "@/components/ui/user-create-modal";
-import {createUser, CreateUserPayload} from "@/app/(public)/customer/action";
 
 export default function ShopProducts({ customerSession }: { customerSession?: any }) {
 
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [mode, setMode] = useState<"Create" | "Login">("Create");
-  const [userCreateForm, setUserCreateForm] = useState<CreateUserPayload>({
+  const [userCreateForm, setUserCreateForm] = useState<CreateCustomerPayload>({
           firstName: "",
           lastName: "",
           email: "",
           phoneNumber: "",
-          username: "",
-          password: "",
           user_type: "CUSTOMER"
         });
 
@@ -181,32 +179,65 @@ export default function ShopProducts({ customerSession }: { customerSession?: an
       setOpen(true)
   }
 
-  const handleCreateOrder = async () => {
+const handleCreateOrder = async () => {
+    try {
 
-    const userResponse = await createUser(userCreateForm)
+      const payload: PlaceOrderPayload = {
+        customer_data: userCreateForm,
+        order_data: orderPayload,
+      };
 
-    console.log(userResponse,"USERREPSOSSOJSOJSOJSOJS");
+      const response = await placeOrder(payload);
 
-    if(!userResponse.success) {
+      console.log("ORDER RESPONSE:", response);
 
-      const response = await createOrder(orderPayload);
+      if (response.status !== "SUCCESS") {
 
-      if (response.success) {
-        setOrderPayload({
-          user : 0,
-          payment_status : "PENDING",
-          total_quantity : "0",
-          total_price: "0",
-          order_details: [] as OrderDetails[]
-        })
-        setQuantities({})
-      } else {
-        console.error("Failed to create order:", response.error);
+        toast.error("Order Placement Failed", {
+          description: "Unable to place the order.",
+        });
+
+        return;
       }
-      toast.error(userResponse.error || "Failed to create user");
-      return;
+
+      toast.success("Order Placed Successfully", {
+        description: "Your order has been placed successfully.",
+      });
+
+      setOrderPayload({
+        user: 0,
+        payment_status: "PENDING",
+        total_quantity: "0",
+        total_price: "0",
+        order_details: [],
+      });
+
+      setQuantities({});
+
+      setOpen(false);
+
+      setUserCreateForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phoneNumber: "",
+        user_type: "CUSTOMER",
+        streetName: "",
+        area: "",
+        city: "",
+        state: "",
+        pincode: "",
+      });
+
+    } catch (error) {
+
+      console.error("Order creation error:", error);
+
+      toast.error("Order Placement Failed", {
+        description: "Something went wrong while placing the order.",
+      });
     }
-  }
+  };
 
   return (
     <section id="productsSection"
@@ -216,9 +247,7 @@ export default function ShopProducts({ customerSession }: { customerSession?: an
         
         <div className="mb-14">
           {/* Header */}
-          <div className="relative flex items-center justify-between">
-
-            
+          <div className="relative flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => router.push("/")}
@@ -406,7 +435,7 @@ export default function ShopProducts({ customerSession }: { customerSession?: an
           setUserCreateForm={setUserCreateForm}
           singleTab={true}
           singleTabName={"Create"}
-          onUserCreated={handleCreateOrder}
+          onOrderPlaced={handleCreateOrder}
         />
         
       </div>

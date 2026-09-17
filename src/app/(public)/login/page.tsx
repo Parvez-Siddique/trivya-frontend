@@ -60,8 +60,6 @@ export default function LoginSection() {
       router.push("/product");
 
     } catch (error) {
-      console.error("Login error:", error);
-
       setError(
         error instanceof Error
           ? error.message
@@ -94,7 +92,7 @@ export default function LoginSection() {
                 htmlFor="username"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                User Name
+               E-mail
               </label>
 
               <div className="relative">
@@ -107,7 +105,7 @@ export default function LoginSection() {
                   id="username"
                   name="username"
                   type="text"
-                  placeholder="Enter your username"
+                  placeholder="Enter your email"
                   value={formData.username}
                   onChange={handleChange}
                   autoComplete="username"

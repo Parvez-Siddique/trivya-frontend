@@ -3,16 +3,11 @@
 
 import { useState } from "react";
 import { X, Package } from "lucide-react";
-
-import type {
-  CustomerOrderListDTO,
-} from "@/app/(public)/my-orders/action";
-
-import Datatable, {
-  Column,
-  Pagination,
-} from "@/components/ui/datatable";
-
+import { Button } from "@/components/ui/button"
+import {CustomerOrderListDTO, updateOrderStatus, getCustomerOrders} from "@/app/(public)/my-orders/action";
+import Datatable, {Column, Pagination} from "@/components/ui/datatable";
+import OrderStatusModal from "@/components/ui/order-status-modal";
+import { toast } from "sonner";
 
 type CustomerOrdersProps = {
   customerOrders: CustomerOrderListDTO[] | undefined | null;
@@ -20,12 +15,8 @@ type CustomerOrdersProps = {
   onPageChange?: (page: number) => void;
 };
 
-/**
- * Expanded Order Details
- */
-function OrderDetailsRow({
-  order,
-}: {
+
+function OrderDetailsRow({order}: {
   order: CustomerOrderListDTO;
 }) {
   if (!order.order_details?.length) {
@@ -35,6 +26,8 @@ function OrderDetailsRow({
       </div>
     );
   }
+
+
 
   return (
     <div className="border-t bg-muted/30 p-5">
@@ -118,21 +111,14 @@ function OrderDetailsRow({
 }
 
 export default function OrdersList({customerOrders, pagination, onPageChange}: CustomerOrdersProps) {
-  const [cancellingOrderId, setCancellingOrderId] = useState<number | null>(null);
 
-  const handleCancelOrder = async (orderId: number) => {
-    try {
-      setCancellingOrderId(orderId);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number>(0);
 
-    } catch (error) {
-      console.error(
-        "Failed to cancel order:",
-        error
-      );
-    } finally {
-      setCancellingOrderId(null);
-    }
-  };
+  const [paymentStatus, setPaymentStatus] = useState<string>("");
+  const [orderStatus, setOrderStatus] = useState<string>("");
+
+  const [customerOrderList, setCustomerOrderList] = useState<CustomerOrderListDTO[] | null | undefined>(customerOrders);
 
   const columns: Column<CustomerOrderListDTO>[] = [
     {
@@ -163,6 +149,30 @@ export default function OrdersList({customerOrders, pagination, onPageChange}: C
           {String(value)}
         </span>
       ),
+    },
+
+    {
+      key: "order_status",
+      title: "Order Status",
+      render: (value) => {
+        const status = String(value).toUpperCase();
+
+        return (
+          <span
+            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+              status === "PENDING"
+                ? "bg-yellow-100 text-yellow-700"
+                : status === "PAID"
+                ? "bg-green-100 text-green-700"
+                : status === "CANCELLED"
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            {status}
+          </span>
+        );
+      },
     },
 
     {
@@ -218,29 +228,100 @@ export default function OrdersList({customerOrders, pagination, onPageChange}: C
         <div className="flex items-center gap-2">
 
           {order.payment_status !== "CANCELLED" && (
-            <button
-              type="button"
-              onClick={() =>
-                handleCancelOrder(order.id)
-              }
-              disabled={cancellingOrderId === order.id}
-              className="inline-flex h-9 items-center gap-2 rounded-md border border-red-200 px-3 text-sm font-medium text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-              title="Cancel Order"
-            >
-              <X className="h-4 w-4" />
 
-              <span>
-                {cancellingOrderId === order.id
-                  ? "Cancelling..."
-                  : "Cancel Order"}
-              </span>
-            </button>
+            <>
+
+              <Button
+                className="cursor-pointer"
+                onClick={() => {
+                  setSelectedOrderId(order.id);
+                  setStatusModalOpen(true);
+                }}
+              >
+                Update Status
+              </Button>
+            
+            </>
+            
           )}
 
         </div>
       ),
     },
   ];
+
+
+  const fetchOrdersList = async () => {
+    try {
+      const response = await getCustomerOrders({
+        page: 1,
+        page_size: 10,
+      });
+
+      setCustomerOrderList(response.data);
+    } catch (error) {
+      console.error("Failed to fetch customer orders:", error);
+    }
+  };
+
+
+
+  const order_status_list = [
+    {
+      value : "PENDING",
+      label : "Pending"
+    },
+    {
+      value : "CONFIRMED",
+      label : "Confirmed"
+    },
+
+     {
+      value : "DELIVERED",
+      label : "Delivered"
+    }
+  ]
+
+  const payment_status_list = [
+    {
+      value : "PENDING",
+      label : "Pending"
+    },
+    {
+      value : "PAYMENT_CONFIRMED",
+      label : "Payment Confirmed"
+    },
+
+    {
+      value : "PAYMENT_NOT_RECEIVED",
+      label : "Payment Not Received"
+    }
+  ]
+
+
+  const handleStatusUpdate = async () => {
+
+    const response = await updateOrderStatus({
+      order_id: selectedOrderId,
+      payment_status: paymentStatus,
+      order_status: orderStatus,
+    });
+
+    if (!response.success) {
+      toast.error("Status Update Failed", {
+        description: "Unable to update the order status.",
+      });
+      return;
+    }
+
+    toast.success("Status Updated Successfully", {
+      description: "The order status has been updated successfully.",
+    });
+
+    await fetchOrdersList();
+
+    setStatusModalOpen(false);
+  };
 
   return (
     <div className="flex flex-col w-full justify-center px-4 py-6">
@@ -258,7 +339,7 @@ export default function OrdersList({customerOrders, pagination, onPageChange}: C
         
       <div className="min-w-[1000px]">
         <Datatable
-          data={customerOrders || []}
+          data={customerOrderList || []}
           columns={columns}
           pagination={pagination}
           onPageChange={onPageChange}
@@ -270,6 +351,19 @@ export default function OrdersList({customerOrders, pagination, onPageChange}: C
         />
 
       </div>
+
+
+      <OrderStatusModal
+        open={statusModalOpen}
+        setOpen={setStatusModalOpen}
+        payment_status_value={paymentStatus}
+        payment_status_state={setPaymentStatus}
+        order_status_value={orderStatus}
+        order_status_state={setOrderStatus}
+        paymentStatusList={payment_status_list}
+        orderStatusList={order_status_list}
+        onSave={handleStatusUpdate}
+      />
 
     </div>
   );

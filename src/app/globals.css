@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+
+@theme {
+  --font-heading: var(--font-urbanist);
+  --font-body: var(--font-urbanist);
+  --font-sans: var(--font-urbanist);
+}
+
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
