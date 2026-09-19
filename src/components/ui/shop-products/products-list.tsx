@@ -320,105 +320,107 @@ const handleCreateOrder = async () => {
         {/* Products */}
         {!loading && products.length > 0 && (
           <div className="space-y-8">
-            {products.filter((product) => product.isActive).map((product) => {
-                const quantity = getQuantity(product.id);
+            {products.map((product) => {
+              const quantity = getQuantity(product.id);
 
-                return (
-                  <div key={product.id}
-                    className="group overflow-hidden rounded-3xl border border-primary-brown/15 bg-primary-background-lite shadow-sm transition-all duration-300 hover:shadow-lg">
-                    <div className="flex flex-col md:flex-row min-h-[420px]">
+              return (
+                <div
+                  key={product.id}
+                  className="group overflow-hidden rounded-3xl border border-primary-brown/15 bg-primary-background-lite shadow-sm transition-all duration-300 hover:shadow-lg"
+                >
+                  <div className="flex flex-col md:flex-row min-h-[420px]">
 
-                      {/* ================= IMAGE ================= */}
-                      <div className="relative w-full md:w-[45%] lg:w-[42%] min-h-[360px] md:min-h-[420px] bg-primary-background overflow-hidden flex items-center justify-center">
-                        <img
-                          src={product.product_image}
-                          alt={product.product_name}
-                          className="w-full h-full object-contain p-8 md:p-12 transition-transform duration-500 group-hover:scale-105"
-                        />
+                    {/* ================= IMAGE ================= */}
+                    <div className="relative w-full md:w-[45%] lg:w-[42%] min-h-[360px] md:min-h-[420px] bg-primary-background overflow-hidden flex items-center justify-center">
+                      <img
+                        src={product.product_image}
+                        alt={product.product_name}
+                        className="w-full h-full object-contain p-8 md:p-12 transition-transform duration-500 group-hover:scale-105"
+                      />
 
-                        {/* Image overlay */}
-                        <div
-                          className="absolute inset-0 bg-gradient-to-r from-transparent to-primary-background-lite/20 pointer-events-none"
-                        />
+                      {/* Image overlay */}
+                      <div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent to-primary-background-lite/20 pointer-events-none"
+                      />
+                    </div>
+
+                    {/* ================= CONTENT ================= */}
+                    <div className="flex flex-1 flex-col justify-center px-7 py-8 md:px-10 lg:px-14 md:py-10">
+
+                      {/* Product Name */}
+                      <h2 className="mt-5 text-3xl md:text-4xl font-serif font-semibold text-primary-thick">
+                        {product.product_name}
+                      </h2>
+
+                      {/* Subheading */}
+                      <p className="mt-2 text-base md:text-lg font-medium text-primary-brown">
+                        {product.subheading} - {product.product_qty}
+                      </p>
+
+                      {/* Description */}
+                      <p className="mt-5 max-w-xl text-sm md:text-base leading-7 text-gray-600">
+                        {product.description}
+                      </p>
+
+                      {/* Divider */}
+                      <div className="my-7 h-px w-full bg-primary-brown/10" />
+
+                      {/* Price */}
+                      <div>
+                        <p className="text-xs uppercase tracking-widest text-gray-500">
+                          Price
+                        </p>
+
+                        <p className="mt-1 text-3xl font-semibold text-primary-thick">
+                          ₹{Number(product.price).toLocaleString("en-IN")}
+                        </p>
                       </div>
 
-                      {/* ================= CONTENT ================= */}
-                      <div className="flex flex-1 flex-col justify-center px-7 py-8 md:px-10 lg:px-14 md:py-10">
+                      {/* Shopping Controls */}
+                      <div className="mt-7 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
 
-                        {/* Product Name */}
-                        <h2 className="mt-5 text-3xl md:text-4xl font-serif font-semibold text-primary-thick">
-                          {product.product_name}
-                        </h2>
+                        {/* Quantity */}
+                        <div className="flex items-center justify-between rounded-xl border border-primary-brown/20 bg-white h-12 px-2 w-full sm:w-[130px]">
 
-                        {/* Subheading */}
-                        <p className="mt-2 text-base md:text-lg font-medium text-primary-brown">
-                          {product.subheading} - {product.product_qty}
-                        </p>
-
-                        {/* Description */}
-                        <p className="mt-5 max-w-xl text-sm md:text-base leading-7 text-gray-600">
-                          {product.description}
-                        </p>
-
-                        {/* Divider */}
-                        <div className="my-7 h-px w-full bg-primary-brown/10"/>
-
-                        {/* Price */}
-                        <div>
-                          <p className="text-xs uppercase tracking-widest text-gray-500">
-                            Price
-                          </p>
-
-                          <p
-                            className="mt-1 text-3xl font-semibold text-primary-thick"
-                          >
-                            ₹{Number(product.price).toLocaleString("en-IN")}
-                          </p>
-                        </div>
-
-                        {/* Shopping Controls */}
-                        <div className="mt-7 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-                          {/* Quantity */}
-                          <div
-                            className="flex items-center justify-between rounded-xl border border-primary-brown/20 bg-white h-12 px-2 w-full sm:w-[130px]"
-                          >
-                            <button
-                              type="button"
-                              onClick={() =>
-                                decreaseQuantity(product.id)
-                              }
-                              className="flex h-9 w-9 items-center justify-center rounded-lg text-primary-thick transition-colors hover:bg-primary-brown/10 cursor-pointer"
-                            >
-                              <Minus className="w-4 h-4" />
-                            </button>
-
-                            <span className="min-w-[30px] text-center font-semibold text-primary-thick">
-                              {quantity}
-                            </span>
-
-                            <button type="button"
-                              onClick={() => increaseQuantity(product.id)}
+                          <button
+                            type="button"
+                            onClick={() => decreaseQuantity(product.id)}
                             className="flex h-9 w-9 items-center justify-center rounded-lg text-primary-thick transition-colors hover:bg-primary-brown/10 cursor-pointer"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                         
-                        </div>
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
 
-                        {/* Quantity information */}
-                        <p className="mt-4 text-xs text-gray-500">
-                          {quantity} × ₹{Number(product.price).toLocaleString("en-IN")}
-                          {" "} = ₹{(Number(product.price) * quantity).toLocaleString("en-IN")}
-                        </p>
+                          <span className="min-w-[30px] text-center font-semibold text-primary-thick">
+                            {quantity}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => increaseQuantity(product.id)}
+                            className="flex h-9 w-9 items-center justify-center rounded-lg text-primary-thick transition-colors hover:bg-primary-brown/10 cursor-pointer"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+
+                        </div>
                       </div>
+
+                      {/* Quantity Information */}
+                      <p className="mt-4 text-xs text-gray-500">
+                        {quantity} × ₹{Number(product.price).toLocaleString("en-IN")}
+                        {" "} = ₹
+                        {(Number(product.price) * quantity).toLocaleString("en-IN")}
+                      </p>
+
                     </div>
                   </div>
-                );
-              })}
-             
+                </div>
+              );
+            })}
           </div>
         )}
+
+
         <div className="mt-10 flex justify-end border-t border-primary-brown/10 pt-8">
           <button
             onClick={handleCreateUserModalOpen}
