@@ -12,6 +12,7 @@ type RequestOptions = {
   body?: unknown;
   headers?: HeadersInit;
   params?: Record<string, string | number | boolean | null | undefined>;
+  requiresAuth?: boolean;
 };
 
 export async function serverAPI<T>(
@@ -23,6 +24,7 @@ export async function serverAPI<T>(
     body,
     headers,
     params,
+    requiresAuth = true
   } = options;
 
   // Get logged-in user session
@@ -52,7 +54,7 @@ export async function serverAPI<T>(
   // Build headers
   const requestHeaders: HeadersInit = {
     // Django Knox authentication
-    ...(userSession?.token
+    ...(requiresAuth && userSession?.token
       ? {
           Authorization: `Token ${userSession.token}`,
         }

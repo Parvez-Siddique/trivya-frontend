@@ -200,6 +200,7 @@ export async function getProductsPublicList(params: ProductListParams = {}) {
     const products = await serverAPI<Product[]>("/products/product-public-list", {
       method: "GET",
       params,
+      requiresAuth: false
     });
 
     return {

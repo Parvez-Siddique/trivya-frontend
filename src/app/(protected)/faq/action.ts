@@ -209,6 +209,7 @@ export async function getPublicFAQList(params: FAQListParams = {}) {
       {
         method: "GET",
         params,
+        requiresAuth: false
       }
     );
 
