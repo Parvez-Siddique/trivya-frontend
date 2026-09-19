@@ -58,9 +58,7 @@ export default function OilUseSection({
 
             {/* Shop Now Button */}
             <div className="mt-8 flex justify-center lg:justify-start">
-               <button className="cursor-pointer flex items-center gap-2 bg-primary text-white
-                  font-medium border border-primary px-3 py-1.5 rounded-2xl 
-                  hover:bg-primary-background hover:text-primary transition-colors duration-300"
+               <button className="cursor-pointer flex items-center gap-2 bg-primary text-white font-medium border border-primary px-3 py-1.5 rounded-2xl  hover:bg-primary-background hover:text-primary transition-colors duration-300"
                     onClick={handleShopNow}
                 >
                   <ShoppingBag className="w-5 h-5" />
