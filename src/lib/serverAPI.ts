@@ -45,7 +45,7 @@ export async function serverAPI<T>(
   }
 
   // Build URL
-  const url = `${BACKEND_URL}/app${endpoint}${
+  const url = `${BACKEND_URL}${endpoint}${
     queryParams.toString()
       ? `?${queryParams.toString()}`
       : ""
