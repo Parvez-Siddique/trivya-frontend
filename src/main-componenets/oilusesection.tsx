@@ -1,29 +1,28 @@
-"use client";
 
-export default function OilUseSection({userSession}: {userSession?: any}) {
+"use client";
+import { ShoppingBag } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+export default function OilUseSection({
+  userSession,
+}: {
+  userSession?: any;
+}) {
+  const router = useRouter();
+
+  const handleShopNow = () => {
+    router.push("/shop-products");
+  };
 
   return (
-    <section className="relative w-full min-h-[calc(100vh-100px)] mt-[100px] px-6 md:px-12 lg:px-20 py-16 overflow-hidden" id="oilUseSection">
-
+    <section
+      className="relative w-full min-h-[calc(100vh-100px)] mt-[100px] px-6 md:px-12 lg:px-20 py-16 overflow-hidden"
+      id="oilUseSection"
+    >
       <div className="max-w-7xl mx-auto">
-
-        {/* <div className="flex flex-col justify-start">
-          <div>
-              <p className="text-sm md:text-base tracking-[0.3em] uppercase text-primary-brown">
-                Welcome!
-              </p>
-          </div>
-          <div>
-            <p className="text-sm md:text-base tracking-[0.3em] uppercase text-primary-brown">
-                <span className="font-bold">{userSession?.first_name ? userSession.first_name : "User"} {userSession?.last_name ? userSession.last_name : ""}</span>
-              </p>
-          </div>
-        </div> */}
 
         {/* Main Content */}
         <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
-
-          
 
           {/* Content Section */}
           <div className="w-full lg:w-1/2 text-center lg:text-left">
@@ -55,8 +54,21 @@ export default function OilUseSection({userSession}: {userSession?: any}) {
 
             </div>
 
-          </div>
 
+
+            {/* Shop Now Button */}
+            <div className="mt-8 flex justify-center lg:justify-start">
+               <button className="cursor-pointer flex items-center gap-2 bg-primary text-white
+                  font-medium border border-primary px-3 py-1.5 rounded-2xl 
+                  hover:bg-primary-background hover:text-primary transition-colors duration-300"
+                    onClick={handleShopNow}
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  <span>Shop Now</span>
+                </button>
+            </div>
+
+          </div>
 
           {/* Image Section */}
           <div className="w-full lg:w-1/2 h-[500px] lg:h-[600px] rounded-2xl overflow-hidden">
@@ -68,7 +80,6 @@ export default function OilUseSection({userSession}: {userSession?: any}) {
           </div>
 
         </div>
-
 
         {/* Benefits Row */}
         <div className="mt-16 pt-8 border-t border-primary-brown/20">
@@ -94,7 +105,6 @@ export default function OilUseSection({userSession}: {userSession?: any}) {
         </div>
 
       </div>
-
     </section>
   );
 }
