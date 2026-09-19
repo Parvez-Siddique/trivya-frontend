@@ -128,24 +128,12 @@ export default function CreateProductPage({
     */
     const formData = new FormData(form);
 
-    /*
-    * Product image handling.
-    */
     if (imageFile) {
       formData.set("product_image", imageFile);
     } else if (isEditMode) {
-      /*
-      * If editing and no new image was selected,
-      * don't send product_image.
-      *
-      * This allows Django to retain the existing image.
-      */
       formData.delete("product_image");
     }
 
-    /*
-    * Validate price.
-    */
     const price = Number(
       formData.get("price")
     );
@@ -393,7 +381,7 @@ export default function CreateProductPage({
                 <Input
                   id="price"
                   name="price"
-                  type="number"
+                  type="text"
                   step="1"
                   min="0"
                   placeholder="0.00"
