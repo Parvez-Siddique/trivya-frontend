@@ -84,25 +84,18 @@ export default function CreateProductPage({
     setImagePreview(previewUrl);
   };
 
-  /*
-   * Remove selected product image.
-   */
+
   const removeImage = () => {
     setImagePreview(null);
     setImageFile(null);
   };
 
-  /*
-   * Handle form submission.
-   */
+
  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const form = event.currentTarget;
 
-    /*
-    * Product ID is required for edit.
-    */
     if (isEditMode && !productDetails?.id) {
       toast.error("Product ID is missing", {
         description: "Unable to update the product.",
@@ -110,12 +103,6 @@ export default function CreateProductPage({
       return;
     }
 
-    /*
-    * Image is required only when creating.
-    *
-    * During edit, the existing image can be kept
-    * without selecting a new image.
-    */
     if (!isEditMode && !imageFile) {
       toast.error("Product image is required", {
         description: "Please upload a product image.",
@@ -123,9 +110,6 @@ export default function CreateProductPage({
       return;
     }
 
-    /*
-    * Create FormData from the form.
-    */
     const formData = new FormData(form);
 
     if (imageFile) {

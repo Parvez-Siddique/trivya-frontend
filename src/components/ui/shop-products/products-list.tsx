@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {ShoppingBag, Plus, Minus, ArrowLeft, ArrowRight} from "lucide-react";
 import {getProductsPublicList, Product} from "@/app/(protected)/product/action";
-import {createOrder, CreateOrderPayload,
+import {CreateOrderPayload,
    OrderDetails, CreateCustomerPayload,
     placeOrder, PlaceOrderPayload} from "@/app/(public)/shop-products/action";
 import { toast } from "sonner";
@@ -45,6 +45,8 @@ export default function ShopProducts({ customerSession }: { customerSession?: an
   const getProductsList = async () => {
     try {
       const response = await getProductsPublicList({page: 0, page_size: 10});
+
+      console.log(response.data,"SSSOSOKSOSKOSKOSK")
 
       if (response.success) {
         setProducts(response.data ?? []);
