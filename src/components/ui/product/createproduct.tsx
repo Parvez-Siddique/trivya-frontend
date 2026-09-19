@@ -41,9 +41,6 @@ export default function CreateProductPage({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  /*
-   * Set existing product image when editing.
-   */
   useEffect(() => {
     if (isEditMode && productDetails) {
       setImagePreview(productDetails.product_image || null);

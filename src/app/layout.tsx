@@ -25,11 +25,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(
-        "h-full",
-        "antialiased",
-        urbanist.variable,
-      )}
+      className={cn("h-full", "antialiased", urbanist.variable,)}
     >
       <body className="min-h-full flex flex-col">
         {children}

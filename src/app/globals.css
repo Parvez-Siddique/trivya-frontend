@@ -54,7 +54,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --primary-background-color: #FAF3E5;
+    --primary-background-color: #faecd1;
     --primary-background-color-lite: hsl(36, 33%, 97%);
     --primary-color: rgb(100, 142, 110);
     --primary-color-thick: rgb(78, 110, 86);
