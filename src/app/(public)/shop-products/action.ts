@@ -7,6 +7,7 @@ import { serverAPI } from "@/lib/serverAPI";
 export type OrderDetails = {
   product: number;
   quantity: number;
+  product_size: string;
   price: number;
 };
 
@@ -35,6 +36,74 @@ export type PlaceOrderPayload = {
   customer_data: CreateCustomerPayload;
   order_data : CreateOrderPayload;
 };
+
+
+export type ProductVariation = {
+  id?: number;
+
+  size_variation: string;
+
+  price_variation: string;
+
+  variation_image_one: string | null;
+  variation_image_two: string | null;
+  variation_image_three: string | null;
+  variation_image_four: string | null;
+};
+
+export type Product = {
+  id: number;
+
+  product_name: string;
+
+  subheading: string;
+
+  description: string;
+
+  product_image: string;
+
+  isActive: boolean;
+
+  created_at: string;
+
+  updated_at: string;
+
+  product_variations: ProductVariation[];
+};
+
+export type ProductDetailResponse = {
+  status: string;
+
+  data: Product;
+};
+
+export interface CartStorageItem {
+  productId: number;
+  variationId: number;
+  product_count: number;
+}
+
+export interface GetCartDetailsItem {
+  product_id: number;
+  variation_id: number;
+  product_count: number;
+}
+
+export interface GetCartDetailsPayload {
+  cart: GetCartDetailsItem[];
+}
+
+export interface CartDetailDTO {
+  product_id: number;
+  variation_id: number;
+  product_count: number;
+
+  product_name: string;
+  product_image: string | null;
+
+  size_variation: string;
+  price_variation: string | null;
+}
 
 export async function createOrder(data: CreateOrderPayload | null | undefined) {
   try {
@@ -68,8 +137,6 @@ export async function createOrder(data: CreateOrderPayload | null | undefined) {
     };
   }
 }
-
-
 
 type PlaceOrderResponse = {
   status: "SUCCESS" | "FAILED";
@@ -105,3 +172,107 @@ export async function placeOrder(
   }
 }
 
+
+export async function getPublicProductDetails({
+  product_id,
+}: {
+  product_id: number;
+}) {
+  try {
+
+    const response =
+      await serverAPI<ProductDetailResponse>(
+        "/products/get-public-product-details/",
+        {
+          method: "GET",
+
+          params: {
+            product_id,
+          },
+          requiresAuth: false
+        }
+        
+      );
+
+    return {
+      success:
+        response.status === "SUCCESS",
+
+      data:
+        response.data,
+
+      error:
+        response.status === "SUCCESS"
+          ? undefined
+          : "Failed to fetch product",
+    };
+
+  } catch (error) {
+
+    console.error(
+      "Get product details error:",
+      error
+    );
+
+    return {
+      success: false,
+
+      data: null,
+
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch product",
+    };
+  }
+}
+
+
+export async function getCartProductDetails({cart}: {
+  cart: CartStorageItem[];
+}) {
+  try {
+    const payload: GetCartDetailsPayload = {
+      cart: cart.map((item) => ({
+        product_id: item.productId,
+        variation_id: item.variationId,
+        product_count: item.product_count,
+      })),
+    };
+
+    const response =
+      await serverAPI<CartDetailDTO[]>(
+        "/products/get-cart-details/",
+        {
+          method: "POST",
+          body: payload,
+          requiresAuth: false,
+        }
+      );
+
+    // Your API returns the array directly.
+    const cartDetails = Array.isArray(response)
+      ? response
+      : [];
+
+    return {
+      success: true,
+      data: cartDetails,
+      error: undefined,
+    };
+  } catch (error) {
+    console.error(
+      "Get cart details error:",
+      error
+    );
+
+    return {
+      success: false,
+      data: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch cart details",
+    };
+  }
+}

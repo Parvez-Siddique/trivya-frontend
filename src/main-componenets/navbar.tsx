@@ -8,7 +8,7 @@ export default function Navbar({userSession}: {userSession: any}) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const redirectProducts = () => {router.push("/shop-products")}
+  const redirectProducts = () => {router.push("/main-products")}
 
 
   return (
@@ -58,7 +58,7 @@ export default function Navbar({userSession}: {userSession: any}) {
               </li>
 
               <li>
-                <a href="/shop-products" className="nav-link">
+                <a href="/main-products" className="nav-link">
                   Shop
                 </a>
               </li>

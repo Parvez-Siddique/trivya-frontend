@@ -113,8 +113,6 @@ export async function loginCustomer(
 
   } catch (error) {
 
-    console.log(error,"KOKOKOKOKOKSOSKJIJ")
-
     return {
       success: false,
       error:

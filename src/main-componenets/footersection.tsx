@@ -125,6 +125,16 @@ export default function FooterSection() {
                 <FaFacebook  className="w-5 h-5" />
               </a>
 
+              <a
+                href="https://www.youtube.com/@Trivyacare"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Trivya Facebook"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-primary-brown/20 text-primary-thick transition-all duration-300 hover:bg-primary-brown hover:text-white hover:scale-105"
+              >
+                <FaYoutube  className="w-5 h-5" />
+              </a>
+
             </div>
 
             {/* Shop Link */}

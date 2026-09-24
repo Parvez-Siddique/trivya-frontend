@@ -1,326 +1,278 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  ShoppingBag,
-  Plus,
-  Minus,
   ArrowLeft,
-  ArrowRight,
+  Check,
+  ImageOff,
+  ShoppingCart,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import {
-  getProductsPublicList,
+import type {
   Product,
-} from "@/app/(protected)/product/action";
-
-import {
-  CreateOrderPayload,
-  OrderDetails,
-  CreateCustomerPayload,
-  placeOrder,
-  PlaceOrderPayload,
+  ProductVariation,
 } from "@/app/(public)/shop-products/action";
 
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import UserCreateModal from "@/components/ui/user-create-modal";
+type CartItem = {
+  productId: number;
+  variationId: number;
+  product_count: number;
+};
+
+const CART_STORAGE_KEY = "trivya_cart";
 
 export default function ShopProducts({
   customerSession,
+  productDetails,
 }: {
   customerSession?: any;
+  productDetails: Product;
 }) {
   const router = useRouter();
 
-  const [open, setOpen] = useState(false);
-
-  const [mode, setMode] = useState<"Create" | "Login">("Create");
-
-  const [userCreateForm, setUserCreateForm] =
-    useState<CreateCustomerPayload>({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phoneNumber: "",
-      user_type: "CUSTOMER",
-      streetName: "",
-      area: "",
-      city: "",
-      state: "",
-      pincode: "",
-    });
-
-  const [loading, setLoading] = useState(true);
-
-  const [products, setProducts] = useState<Product[]>([]);
-
-  const [quantities, setQuantities] = useState<{
-    [key: number]: number;
-  }>({});
-
-  const [orderPayload, setOrderPayload] =
-    useState<CreateOrderPayload>({
-      user: 0,
-      payment_status: "PENDING",
-      total_quantity: "0",
-      total_price: "0",
-      order_details: [] as OrderDetails[],
-    });
-
-  const userSession = customerSession;
+  const product = productDetails;
 
   // =========================================================
-  // GET PRODUCTS
+  // SELECTED VARIATION
   // =========================================================
 
-  const getProductsList = async () => {
-    try {
-      const response = await getProductsPublicList({
-        page: 0,
-        page_size: 10,
-      });
-
-      if (response.success) {
-        setProducts(response.data ?? []);
-      } else {
-        console.error(
-          "Failed to fetch products:",
-          response.error
-        );
-      }
-    } catch (error) {
-      console.error("Get products error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getProductsList();
-  }, []);
-
-
-  const increaseQuantity = (id: number) => {
-    const product = products.find(
-      (product) => product.id === id
+  const [selectedVariation, setSelectedVariation] =
+    useState<ProductVariation | null>(
+      product.product_variations?.[0] ?? null
     );
 
-    if (!product) return;
+  // =========================================================
+  // CART COUNT
+  // =========================================================
 
-    setQuantities((current) => {
-      const newQuantity = (current[id] || 0) + 1;
+  const [cartCount, setCartCount] = useState<number>(() => {
+    if (typeof window === "undefined") {
+      return 0;
+    }
 
-      return {
-        ...current,
-        [id]: newQuantity,
-      };
-    });
+    try {
+      const storedCart =
+        sessionStorage.getItem(CART_STORAGE_KEY);
 
-    setOrderPayload((prevPayload) => {
-      const existingOrderDetail =
-        prevPayload.order_details.find(
-          (orderDetail) => orderDetail.product === id
-        );
-
-      let updatedOrderDetails: OrderDetails[];
-
-      if (existingOrderDetail) {
-        updatedOrderDetails =
-          prevPayload.order_details.map((orderDetail) =>
-            orderDetail.product === id
-              ? {
-                  ...orderDetail,
-                  quantity: orderDetail.quantity + 1,
-                }
-              : orderDetail
-          );
-      } else {
-        updatedOrderDetails = [
-          ...prevPayload.order_details,
-          {
-            product: id,
-            quantity: 1,
-            price: product.price,
-          },
-        ];
+      if (!storedCart) {
+        return 0;
       }
 
-      const totalQuantity =
-        updatedOrderDetails.reduce(
-          (total, item) => total + item.quantity,
-          0
-        );
+      const cart: CartItem[] = JSON.parse(storedCart);
 
-      const totalPrice =
-        updatedOrderDetails.reduce(
-          (total, item) =>
-            total + item.quantity * item.price,
-          0
-        );
+      return cart.reduce(
+        (total, item) =>
+          total + Number(item.product_count || 0),
+        0
+      );
+    } catch {
+      return 0;
+    }
+  });
 
-      return {
-        ...prevPayload,
-        user: userSession?.id ?? 0,
-        order_details: updatedOrderDetails,
-        total_quantity: String(totalQuantity),
-        total_price: String(totalPrice),
-      };
-    });
+  const [isAdded, setIsAdded] = useState(false);
+
+  // =========================================================
+  // IMAGE GALLERY
+  // =========================================================
+
+  const galleryImages = useMemo(() => {
+    const images: string[] = [];
+
+    // -------------------------------------------------------
+    // MAIN PRODUCT IMAGE
+    // -------------------------------------------------------
+
+    if (product.product_image) {
+      images.push(product.product_image);
+    }
+
+    // -------------------------------------------------------
+    // SELECTED VARIATION IMAGES
+    // -------------------------------------------------------
+
+    if (selectedVariation) {
+      const variationImages = [
+        selectedVariation.variation_image_one,
+        selectedVariation.variation_image_two,
+        selectedVariation.variation_image_three,
+        selectedVariation.variation_image_four,
+      ];
+
+      variationImages.forEach((image) => {
+        if (image && !images.includes(image)) {
+          images.push(image);
+        }
+      });
+    }
+
+    return images;
+  }, [product.product_image, selectedVariation]);
+
+  // =========================================================
+  // CURRENT MAIN IMAGE
+  // =========================================================
+
+  const [selectedImage, setSelectedImage] = useState<string>(
+    product.product_image
+  );
+
+  // =========================================================
+  // CHANGE MAIN IMAGE WHEN VARIATION CHANGES
+  // =========================================================
+
+  useEffect(() => {
+    if (!selectedVariation) {
+      setSelectedImage(product.product_image);
+      return;
+    }
+
+    const firstVariationImage =
+      selectedVariation.variation_image_one ||
+      selectedVariation.variation_image_two ||
+      selectedVariation.variation_image_three ||
+      selectedVariation.variation_image_four;
+
+    setSelectedImage(
+      firstVariationImage || product.product_image
+    );
+  }, [selectedVariation, product.product_image]);
+
+  // =========================================================
+  // SAFETY
+  // =========================================================
+
+  useEffect(() => {
+    if (
+      selectedImage &&
+      galleryImages.includes(selectedImage)
+    ) {
+      return;
+    }
+
+    setSelectedImage(
+      galleryImages[0] || product.product_image
+    );
+  }, [
+    galleryImages,
+    selectedImage,
+    product.product_image,
+  ]);
+
+  // =========================================================
+  // SELECT VARIATION
+  // =========================================================
+
+  const handleVariationSelect = (
+    variation: ProductVariation
+  ) => {
+    setSelectedVariation(variation);
   };
 
-  const decreaseQuantity = (id: number) => {
-    setQuantities((current) => {
-      const currentQuantity = current[id] || 0;
+  // =========================================================
+  // ADD TO CART
+  // =========================================================
 
-      const newQuantity = Math.max(
-        currentQuantity - 1,
+  const addToCart = () => {
+    if (!product.id) {
+      return;
+    }
+
+    if (!selectedVariation?.id) {
+      return;
+    }
+
+    try {
+      const storedCart =
+        sessionStorage.getItem(CART_STORAGE_KEY);
+
+      const cart: CartItem[] = storedCart
+        ? JSON.parse(storedCart)
+        : [];
+
+      const productId = Number(product.id);
+      const variationId = Number(selectedVariation.id);
+
+      const existingItemIndex = cart.findIndex(
+        (item) =>
+          item.productId === productId &&
+          item.variationId === variationId
+      );
+
+      // =====================================================
+      // INCREASE COUNT
+      // =====================================================
+
+      if (existingItemIndex !== -1) {
+        cart[existingItemIndex].product_count += 1;
+      }
+
+      // =====================================================
+      // ADD NEW ITEM
+      // =====================================================
+
+      else {
+        cart.push({
+          productId,
+          variationId,
+          product_count: 1,
+        });
+      }
+
+      // =====================================================
+      // SAVE CART
+      // =====================================================
+
+      sessionStorage.setItem(
+        CART_STORAGE_KEY,
+        JSON.stringify(cart)
+      );
+
+      // =====================================================
+      // CALCULATE TOTAL CART QUANTITY
+      // =====================================================
+
+      const totalCount = cart.reduce(
+        (total, item) =>
+          total + Number(item.product_count || 0),
         0
       );
 
-      return {
-        ...current,
-        [id]: newQuantity,
-      };
-    });
+      setCartCount(totalCount);
 
-    setOrderPayload((prevPayload) => {
-      const existingOrderDetail =
-        prevPayload.order_details.find(
-          (orderDetail) => orderDetail.product === id
-        );
+      // =====================================================
+      // SHOW ADDED ANIMATION
+      // =====================================================
 
-      if (!existingOrderDetail) {
-        return prevPayload;
-      }
+      setIsAdded(true);
 
-      const newQuantity =
-        existingOrderDetail.quantity - 1;
-
-      let updatedOrderDetails: OrderDetails[];
-
-      if (newQuantity <= 0) {
-        updatedOrderDetails =
-          prevPayload.order_details.filter(
-            (orderDetail) =>
-              orderDetail.product !== id
-          );
-      } else {
-        updatedOrderDetails =
-          prevPayload.order_details.map(
-            (orderDetail) =>
-              orderDetail.product === id
-                ? {
-                    ...orderDetail,
-                    quantity: newQuantity,
-                  }
-                : orderDetail
-          );
-      }
-
-      const totalQuantity =
-        updatedOrderDetails.reduce(
-          (total, item) => total + item.quantity,
-          0
-        );
-
-      const totalPrice =
-        updatedOrderDetails.reduce(
-          (total, item) =>
-            total + item.quantity * item.price,
-          0
-        );
-
-      return {
-        ...prevPayload,
-        user: userSession?.id ?? 0,
-        order_details: updatedOrderDetails,
-        total_quantity: String(totalQuantity),
-        total_price: String(totalPrice),
-      };
-    });
-  };
-
-  const getQuantity = (id: number) => {
-    return quantities[id] || 0;
-  };
-
-  const handleCreateUserModalOpen = () => {
-    setOpen(true);
-  };
-
-  const handleCreateOrder = async () => {
-    try {
-      const payload: PlaceOrderPayload = {
-        customer_data: userCreateForm,
-        order_data: orderPayload,
-      };
-
-      const response = await placeOrder(payload);
-
-      if (response.status !== "SUCCESS") {
-        toast.error("Order Placement Failed", {
-          description:
-            "Unable to place the order.",
-        });
-
-        return;
-      }
-
-      toast.success("Order Placed Successfully", {
-        description:
-          "Your order has been placed successfully.",
-      });
-
-      // Reset order
-      setOrderPayload({
-        user: 0,
-        payment_status: "PENDING",
-        total_quantity: "0",
-        total_price: "0",
-        order_details: [],
-      });
-
-      // Reset quantities
-      setQuantities({});
-
-      // Close modal
-      setOpen(false);
-
-      // Reset customer form
-      setUserCreateForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phoneNumber: "",
-        user_type: "CUSTOMER",
-        streetName: "",
-        area: "",
-        city: "",
-        state: "",
-        pincode: "",
-      });
+      setTimeout(() => {
+        setIsAdded(false);
+      }, 1200);
     } catch (error) {
       console.error(
-        "Order creation error:",
+        "Failed to add product to cart:",
         error
       );
-
-      toast.error("Order Placement Failed", {
-        description:
-          "Something went wrong while placing the order.",
-      });
     }
   };
 
   // =========================================================
-  // UI
+  // PRICE
+  // =========================================================
+
+  const selectedPrice =
+    selectedVariation?.price_variation ?? "";
+
+  // =========================================================
+  // COMPONENT
   // =========================================================
 
   return (
     <section
-      id="productsSection"
+      id="productDetailsSection"
       className="
         relative
         h-dvh
@@ -329,9 +281,8 @@ export default function ShopProducts({
         px-3
         sm:px-5
         md:px-8
-        lg:px-12
-        xl:px-16
-        2xl:px-20
+        lg:px-10
+        xl:px-14
       "
     >
       <div
@@ -344,10 +295,9 @@ export default function ShopProducts({
           flex-col
         "
       >
-
-        {/* ===================================================== */}
+        {/* ================================================= */}
         {/* HEADER */}
-        {/* ===================================================== */}
+        {/* ================================================= */}
 
         <div
           className="
@@ -359,30 +309,20 @@ export default function ShopProducts({
             sm:pt-7
             md:px-2
             md:pb-6
-            md:pt-10
-            lg:pt-12
+            md:pt-9
           "
         >
-          <div
-            className="
-              relative
-              flex
-              min-h-9
-              items-center
-              justify-between
-            "
-          >
+          <div className="relative flex min-h-9 items-center">
 
-            {/* Back Button */}
+            {/* BACK */}
 
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => router.back()}
               className="
-                cursor-pointer
                 group
                 flex
-                shrink-0
+                cursor-pointer
                 items-center
                 gap-1.5
                 text-sm
@@ -408,7 +348,7 @@ export default function ShopProducts({
               <span>Back</span>
             </button>
 
-            {/* Center Title */}
+            {/* TITLE */}
 
             <p
               className="
@@ -423,46 +363,82 @@ export default function ShopProducts({
                 sm:text-2xl
                 md:text-3xl
                 lg:text-4xl
-                xl:text-5xl
               "
             >
-              Shop Our Products
+              Product Details
             </p>
 
-            {/* Right Spacer */}
+            {/* CART */}
 
-            <div className="w-[52px] sm:w-[65px]" />
+            <button
+              type="button"
+              onClick={() => router.push("/cart")}
+              aria-label="View cart"
+              className="
+                group
+                relative
+                ml-auto
+                flex
+                h-10
+                w-10
+                cursor-pointer
+                items-center
+                justify-center
+                rounded-full
+                text-primary-thick
+                transition-all
+                duration-200
+                hover:scale-105
+                hover:bg-primary-brown/10
+                sm:h-11
+                sm:w-11
+              "
+            >
+              <ShoppingCart
+                className="
+                  h-5
+                  w-5
+                  sm:h-6
+                  sm:w-6
+                "
+              />
+
+              {cartCount > 0 && (
+                <span
+                  className="
+                    absolute
+                    -right-0.5
+                    -top-1
+                    flex
+                    min-h-5
+                    min-w-5
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-primary-thick
+                    px-1
+                    text-[10px]
+                    font-bold
+                    leading-none
+                    text-white
+                    shadow-sm
+                    ring-2
+                    ring-primary-background-lite
+                    sm:text-xs
+                  "
+                >
+                  {cartCount > 99
+                    ? "99+"
+                    : cartCount}
+                </span>
+              )}
+            </button>
           </div>
-
-          {/* Description */}
-
-          <p
-            className="
-              mx-auto
-              mt-4
-              max-w-xl
-              px-2
-              text-center
-              text-xs
-              leading-5
-              text-gray-600
-              sm:mt-5
-              sm:text-sm
-              sm:leading-6
-              md:mt-6
-              md:text-base
-              md:leading-7
-            "
-          >
-            Discover our carefully crafted hair care
-            products designed to nourish, strengthen
-            and care for your hair.
-          </p>
         </div>
 
-        {/* ===================================================== */}
-        {/* PRODUCTS SCROLL AREA */}
-        {/* ===================================================== */}
+        {/* ================================================= */}
+        {/* SCROLLABLE CONTENT */}
+        {/* ================================================= */}
 
         <div
           className="
@@ -470,871 +446,708 @@ export default function ShopProducts({
             flex-1
             overflow-y-auto
             overscroll-contain
-            pb-4
+            pb-32
             pr-1
-            sm:pb-5
+            sm:pb-36
             sm:pr-2
-            md:pb-6
           "
         >
-
-          {/* =================================================== */}
-          {/* LOADING */}
-          {/* =================================================== */}
-
-          {loading && (
+          <div
+            className="
+              mx-auto
+              w-full
+              max-w-7xl
+              overflow-hidden
+              rounded-2xl
+              border
+              border-primary-brown/15
+              bg-primary-background-lite
+              shadow-sm
+              sm:rounded-3xl
+            "
+          >
             <div
               className="
                 flex
-                min-h-[240px]
                 flex-col
-                items-center
-                justify-center
+                lg:flex-row
               "
             >
+
+              {/* ================================================= */}
+              {/* PRODUCT GALLERY */}
+              {/* ================================================= */}
+
               <div
                 className="
-                  h-8
-                  w-8
-                  animate-spin
-                  rounded-full
-                  border-4
-                  border-primary-brown/20
-                  border-t-primary-thick
-                  sm:h-10
-                  sm:w-10
-                "
-              />
-
-              <p
-                className="
-                  mt-3
-                  text-xs
-                  text-gray-500
-                  sm:mt-4
-                  sm:text-sm
+                  w-full
+                  bg-primary-background
+                  lg:w-[58%]
                 "
               >
-                Loading products...
-              </p>
-            </div>
-          )}
+                <div
+                  className="
+                    relative
+                    flex
+                    min-h-[430px]
+                    w-full
+                    flex-col
+                    overflow-hidden
+                    p-4
+                    sm:min-h-[550px]
+                    sm:p-6
+                    md:min-h-[620px]
+                    md:p-8
+                    lg:min-h-[700px]
+                    lg:p-10
+                  "
+                >
+                  {/* Decorative background */}
 
-          {/* =================================================== */}
-          {/* EMPTY STATE */}
-          {/* =================================================== */}
-
-          {!loading && products.length === 0 && (
-            <div
-              className="
-                rounded-2xl
-                border
-                border-primary-brown/20
-                bg-primary-background-lite
-                px-5
-                py-12
-                text-center
-                sm:py-16
-              "
-            >
-              <ShoppingBag
-                className="
-                  mx-auto
-                  h-9
-                  w-9
-                  text-primary-brown/50
-                  sm:h-10
-                  sm:w-10
-                "
-              />
-
-              <p
-                className="
-                  mt-4
-                  text-base
-                  font-semibold
-                  text-primary-thick
-                  sm:text-lg
-                "
-              >
-                No products available
-              </p>
-
-              <p
-                className="
-                  mx-auto
-                  mt-2
-                  max-w-sm
-                  text-xs
-                  leading-5
-                  text-gray-500
-                  sm:text-sm
-                  sm:leading-6
-                "
-              >
-                Please check back later for our
-                products.
-              </p>
-            </div>
-          )}
-
-          {/* =================================================== */}
-          {/* PRODUCTS */}
-          {/* =================================================== */}
-
-          {!loading && products.length > 0 && (
-            <div
-              className="
-                space-y-4
-                sm:space-y-6
-                md:space-y-8
-              "
-            >
-              {products.map((product) => {
-                const quantity = getQuantity(
-                  product.id
-                );
-
-                const unitPrice =
-                  Number(product.price);
-
-                const totalPrice =
-                  unitPrice * quantity;
-
-                return (
                   <div
-                    key={product.id}
                     className="
-                      group
+                      pointer-events-none
+                      absolute
+                      -left-24
+                      -top-24
+                      h-72
+                      w-72
+                      rounded-full
+                      bg-primary-brown/5
+                      blur-3xl
+                    "
+                  />
+
+                  <div
+                    className="
+                      pointer-events-none
+                      absolute
+                      -bottom-24
+                      -right-24
+                      h-72
+                      w-72
+                      rounded-full
+                      bg-primary-brown/5
+                      blur-3xl
+                    "
+                  />
+
+                  {/* ================================================= */}
+                  {/* MAIN IMAGE */}
+                  {/* ================================================= */}
+
+                  <div
+                    className="
+                      relative
+                      z-10
+                      flex
+                      min-h-0
+                      flex-1
+                      items-center
+                      justify-center
                       overflow-hidden
                       rounded-2xl
                       border
-                      border-primary-brown/15
-                      bg-primary-background-lite
+                      border-primary-brown/10
+                      bg-white
                       shadow-sm
-                      transition-all
-                      duration-300
-                      hover:shadow-lg
                       sm:rounded-3xl
-                      md:hover:-translate-y-1
-                      md:hover:shadow-xl
                     "
                   >
+                    {selectedImage ? (
+                      <img
+                        src={selectedImage}
+                        alt={product.product_name}
+                        className="
+                          h-full
+                          max-h-[520px]
+                          w-full
+                          object-contain
+                          p-5
+                          transition-all
+                          duration-300
+                          sm:p-8
+                          md:p-10
+                          lg:p-12
+                        "
+                      />
+                    ) : (
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-2
+                          text-sm
+                          text-gray-400
+                        "
+                      >
+                        <ImageOff className="h-5 w-5" />
+                        No image available
+                      </div>
+                    )}
+
+                    {/* Image counter */}
+
+                    {galleryImages.length > 0 && (
+                      <div
+                        className="
+                          absolute
+                          bottom-4
+                          right-4
+                          rounded-full
+                          bg-black/55
+                          px-3
+                          py-1.5
+                          text-[10px]
+                          font-medium
+                          text-white
+                          backdrop-blur-sm
+                          sm:bottom-5
+                          sm:right-5
+                        "
+                      >
+                        {galleryImages.indexOf(
+                          selectedImage
+                        ) + 1}{" "}
+                        / {galleryImages.length}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ================================================= */}
+                  {/* THUMBNAILS */}
+                  {/* ================================================= */}
+
+                  {galleryImages.length > 0 && (
                     <div
                       className="
+                        relative
+                        z-10
+                        mt-4
                         flex
-                        min-h-0
-                        flex-col
-                        md:min-h-[420px]
-                        md:flex-row
+                        w-full
+                        gap-3
+                        overflow-x-auto
+                        pb-1
+                        scrollbar-thin
+                        sm:mt-5
+                        sm:gap-4
                       "
                     >
+                      {galleryImages.map(
+                        (image, index) => {
+                          const isSelected =
+                            selectedImage === image;
 
-                      {/* ======================================= */}
-                      {/* IMAGE */}
-                      {/* ======================================= */}
-
-                      <div
-                        className="
-                          relative
-                          flex
-                          h-[250px]
-                          w-full
-                          shrink-0
-                          items-center
-                          justify-center
-                          overflow-hidden
-                          bg-primary-background
-                          sm:h-[300px]
-                          md:h-auto
-                          md:min-h-[420px]
-                          md:w-[44%]
-                          lg:w-[42%]
-                          xl:w-[40%]
-                        "
-                      >
-
-                        {/* Background Decoration */}
-
-                        <div
-                          className="
-                            absolute
-                            -left-16
-                            -top-16
-                            h-40
-                            w-40
-                            rounded-full
-                            bg-primary-brown/5
-                            blur-3xl
-                            sm:h-56
-                            sm:w-56
-                          "
-                        />
-
-                        <div
-                          className="
-                            absolute
-                            -bottom-16
-                            -right-16
-                            h-40
-                            w-40
-                            rounded-full
-                            bg-primary-brown/5
-                            blur-3xl
-                            sm:h-56
-                            sm:w-56
-                          "
-                        />
-
-                        {/* Product Image */}
-
-                        <img
-                          src={product.product_image}
-                          alt={product.product_name}
-                          className="
-                            relative
-                            z-10
-                            h-full
-                            w-full
-                            object-contain
-                            p-7
-                            transition-transform
-                            duration-500
-                            group-hover:scale-105
-                            sm:p-9
-                            md:p-10
-                            lg:p-12
-                            xl:p-14
-                          "
-                        />
-
-                        {/* Image Overlay */}
-
-                        <div
-                          className="
-                            pointer-events-none
-                            absolute
-                            inset-0
-                            bg-gradient-to-r
-                            from-transparent
-                            via-transparent
-                            to-primary-background-lite/30
-                          "
-                        />
-
-                        {/* Product Badge */}
-
-                        <div
-                          className="
-                            absolute
-                            left-3
-                            top-3
-                            z-20
-                            rounded-full
-                            border
-                            border-primary-brown/10
-                            bg-white/80
-                            px-3
-                            py-1
-                            text-[10px]
-                            font-semibold
-                            tracking-wide
-                            text-primary-thick
-                            shadow-sm
-                            backdrop-blur-sm
-                            sm:left-5
-                            sm:top-5
-                            sm:px-4
-                            sm:py-1.5
-                            sm:text-xs
-                          "
-                        >
-                          Natural Care
-                        </div>
-                      </div>
-
-                      {/* ======================================= */}
-                      {/* CONTENT */}
-                      {/* ======================================= */}
-
-                      <div
-                        className="
-                          flex
-                          min-w-0
-                          flex-1
-                          flex-col
-                          px-5
-                          py-6
-                          sm:px-7
-                          sm:py-8
-                          md:px-9
-                          md:py-9
-                          lg:px-11
-                          lg:py-10
-                          xl:px-14
-                        "
-                      >
-
-                        {/* Product Heading */}
-
-                        <div className="min-w-0">
-
-                          <p
-                            className="
-                              mb-1.5
-                              text-[10px]
-                              font-semibold
-                              uppercase
-                              tracking-[0.18em]
-                              text-primary-brown/70
-                              sm:mb-2
-                              sm:text-xs
-                              sm:tracking-[0.2em]
-                            "
-                          >
-                            Hair Care
-                          </p>
-
-                          <h2
-                            className="
-                              break-words
-                              font-serif
-                              text-2xl
-                              font-semibold
-                              leading-tight
-                              text-primary-thick
-                              sm:text-3xl
-                              md:text-4xl
-                            "
-                          >
-                            {product.product_name}
-                          </h2>
-
-                          <p
-                            className="
-                              mt-1.5
-                              break-words
-                              text-sm
-                              font-medium
-                              text-primary-brown
-                              sm:mt-2
-                              sm:text-base
-                              md:text-lg
-                            "
-                          >
-                            {product.subheading}
-
-                            <span
-                              className="
-                                mx-1.5
-                                text-primary-brown/30
-                                sm:mx-2
-                              "
-                            >
-                              •
-                            </span>
-
-                            {product.product_qty}
-                          </p>
-                        </div>
-
-                        {/* Description */}
-
-                        <p
-                          className="
-                            mt-4
-                            max-w-2xl
-                            text-xs
-                            leading-6
-                            text-gray-600
-                            sm:mt-5
-                            sm:text-sm
-                            sm:leading-7
-                            md:text-base
-                          "
-                        >
-                          {product.description}
-                        </p>
-
-                        {/* Divider */}
-
-                        <div
-                          className="
-                            my-5
-                            h-px
-                            w-full
-                            bg-primary-brown/10
-                            sm:my-7
-                          "
-                        />
-
-                        {/* ===================================== */}
-                        {/* PRICE + QUANTITY */}
-                        {/* ===================================== */}
-
-                        <div
-                          className="
-                            flex
-                            flex-col
-                            gap-5
-                            sm:flex-row
-                            sm:items-end
-                            sm:justify-between
-                            sm:gap-4
-                          "
-                        >
-
-                          {/* Unit Price */}
-
-                          <div>
-                            <p
-                              className="
-                                text-[10px]
-                                font-medium
-                                uppercase
-                                tracking-[0.16em]
-                                text-gray-500
-                                sm:text-xs
-                                sm:tracking-[0.18em]
-                              "
-                            >
-                              Unit Price
-                            </p>
-
-                            <p
-                              className="
-                                mt-0.5
-                                text-2xl
-                                font-bold
-                                text-primary-thick
-                                sm:mt-1
-                                sm:text-3xl
-                              "
-                            >
-                              ₹
-                              {unitPrice.toLocaleString(
-                                "en-IN"
-                              )}
-                            </p>
-                          </div>
-
-                          {/* Quantity */}
-
-                          <div
-                            className="
-                              flex
-                              items-end
-                              justify-between
-                              sm:block
-                            "
-                          >
-                            <p
-                              className="
-                                mb-2
-                                text-left
-                                text-[10px]
-                                font-medium
-                                uppercase
-                                tracking-[0.16em]
-                                text-gray-500
-                                sm:text-right
-                                sm:text-xs
-                                sm:tracking-[0.18em]
-                              "
-                            >
-                              Quantity
-                            </p>
-
-                            <div
-                              className="
-                                flex
-                                h-11
-                                items-center
-                                rounded-xl
-                                border
-                                border-primary-brown/20
-                                bg-white
-                                px-1.5
-                                shadow-sm
-                                sm:h-12
-                              "
-                            >
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  decreaseQuantity(
-                                    product.id
-                                  )
-                                }
-                                className="
-                                  flex
-                                  h-8
-                                  w-8
-                                  cursor-pointer
-                                  items-center
-                                  justify-center
-                                  rounded-lg
-                                  text-primary-thick
-                                  transition-all
-                                  hover:bg-primary-brown/10
-                                  active:scale-95
-                                  sm:h-9
-                                  sm:w-9
-                                "
-                              >
-                                <Minus
-                                  className="
-                                    h-3.5
-                                    w-3.5
-                                    sm:h-4
-                                    sm:w-4
-                                  "
-                                />
-                              </button>
-
-                              <span
-                                className="
-                                  flex
-                                  min-w-[38px]
-                                  justify-center
-                                  text-sm
-                                  font-bold
-                                  text-primary-thick
-                                "
-                              >
-                                {quantity}
-                              </span>
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  increaseQuantity(
-                                    product.id
-                                  )
-                                }
-                                className="
-                                  flex
-                                  h-8
-                                  w-8
-                                  cursor-pointer
-                                  items-center
-                                  justify-center
-                                  rounded-lg
-                                  text-primary-thick
-                                  transition-all
-                                  hover:bg-primary-brown/10
-                                  active:scale-95
-                                  sm:h-9
-                                  sm:w-9
-                                "
-                              >
-                                <Plus
-                                  className="
-                                    h-3.5
-                                    w-3.5
-                                    sm:h-4
-                                    sm:w-4
-                                  "
-                                />
-                              </button>
-
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* ===================================== */}
-                        {/* ORDER SUMMARY */}
-                        {/* ===================================== */}
-
-                        <div
-                          className="
-                            mt-5
-                            rounded-xl
-                            border
-                            border-primary-brown/10
-                            bg-white/70
-                            p-4
-                            shadow-sm
-                            sm:mt-7
-                            sm:rounded-2xl
-                            sm:p-5
-                          "
-                        >
-
-                          {/* Summary Header */}
-
-                          <div
-                            className="
-                              mb-3
-                              flex
-                              items-center
-                              justify-between
-                              gap-3
-                              sm:mb-4
-                            "
-                          >
-
-                            <div className="min-w-0">
-
-                              <p
-                                className="
-                                  text-sm
-                                  font-semibold
-                                  text-primary-thick
-                                  sm:text-base
-                                "
-                              >
-                                Order Summary
-                              </p>
-
-                              <p
-                                className="
-                                  mt-0.5
-                                  text-[11px]
-                                  text-gray-500
-                                  sm:text-xs
-                                "
-                              >
-                                Your selected quantity
-                              </p>
-
-                            </div>
-
-                            <div
-                              className="
+                          return (
+                            <button
+                              key={`${image}-${index}`}
+                              type="button"
+                              onClick={() =>
+                                setSelectedImage(
+                                  image
+                                )
+                              }
+                              aria-label={`View product image ${
+                                index + 1
+                              }`}
+                              className={`
+                                relative
+                                h-20
+                                w-20
                                 shrink-0
-                                rounded-full
-                                bg-primary-brown/10
-                                px-2.5
-                                py-1
-                                text-[10px]
-                                font-semibold
-                                text-primary-brown
-                                sm:px-3
-                                sm:text-xs
-                              "
+                                cursor-pointer
+                                overflow-hidden
+                                rounded-xl
+                                border-2
+                                bg-white
+                                transition-all
+                                duration-200
+                                sm:h-24
+                                sm:w-24
+                                sm:rounded-2xl
+                                ${
+                                  isSelected
+                                    ? "border-primary-thick shadow-md ring-2 ring-primary-thick/10"
+                                    : "border-primary-brown/10 hover:border-primary-brown/30 hover:shadow-sm"
+                                }
+                              `}
                             >
-                              {quantity}{" "}
-                              {quantity === 1
-                                ? "item"
-                                : "items"}
-                            </div>
-                          </div>
-
-                          {/* Calculation */}
-
-                          <div
-                            className="
-                              space-y-2.5
-                              sm:space-y-3
-                            "
-                          >
-
-                            {/* Price Per Item */}
-
-                            <div
-                              className="
-                                flex
-                                items-center
-                                justify-between
-                                gap-4
-                                text-xs
-                                sm:text-sm
-                              "
-                            >
-                              <span className="text-gray-500">
-                                Price per item
-                              </span>
-
-                              <span
+                              <img
+                                src={image}
+                                alt={`${product.product_name} thumbnail ${
+                                  index + 1
+                                }`}
                                 className="
-                                  shrink-0
-                                  font-medium
-                                  text-gray-700
+                                  h-full
+                                  w-full
+                                  object-contain
+                                  p-2
+                                  sm:p-2.5
                                 "
-                              >
-                                ₹
-                                {unitPrice.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </span>
-                            </div>
+                              />
 
-                            {/* Quantity */}
+                              {/* Selected indicator */}
 
-                            <div
-                              className="
-                                flex
-                                items-center
-                                justify-between
-                                gap-4
-                                text-xs
-                                sm:text-sm
-                              "
-                            >
-                              <span className="text-gray-500">
-                                Quantity
-                              </span>
-
-                              <span
-                                className="
-                                  shrink-0
-                                  font-medium
-                                  text-gray-700
-                                "
-                              >
-                                × {quantity}
-                              </span>
-                            </div>
-
-                            {/* Divider */}
-
-                            <div className="h-px bg-primary-brown/10" />
-
-                            {/* Total */}
-
-                            <div
-                              className="
-                                flex
-                                items-center
-                                justify-between
-                                gap-4
-                              "
-                            >
-                              <span
-                                className="
-                                  text-xs
-                                  font-semibold
-                                  text-primary-thick
-                                  sm:text-sm
-                                "
-                              >
-                                Item Total
-                              </span>
-
-                              <span
-                                className="
-                                  shrink-0
-                                  text-lg
-                                  font-bold
-                                  text-primary-thick
-                                  sm:text-xl
-                                "
-                              >
-                                ₹
-                                {totalPrice.toLocaleString(
-                                  "en-IN"
-                                )}
-                              </span>
-                            </div>
-
-                          </div>
-                        </div>
-
-                      </div>
+                              {isSelected && (
+                                <span
+                                  className="
+                                    absolute
+                                    bottom-1.5
+                                    right-1.5
+                                    flex
+                                    h-5
+                                    w-5
+                                    items-center
+                                    justify-center
+                                    rounded-full
+                                    bg-primary-thick
+                                    text-white
+                                  "
+                                >
+                                  <Check className="h-3 w-3" />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        }
+                      )}
                     </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ================================================= */}
+              {/* PRODUCT DETAILS */}
+              {/* ================================================= */}
+
+              <div
+                className="
+                  flex
+                  w-full
+                  flex-col
+                  px-5
+                  py-7
+                  sm:px-7
+                  sm:py-9
+                  md:px-10
+                  md:py-10
+                  lg:w-[42%]
+                  lg:px-12
+                  lg:py-12
+                  xl:px-14
+                "
+              >
+                {/* CATEGORY */}
+
+                <p
+                  className="
+                    text-[10px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.18em]
+                    text-primary-brown/70
+                    sm:text-xs
+                  "
+                >
+                  Hair Care
+                </p>
+
+                {/* PRODUCT NAME */}
+
+                <h1
+                  className="
+                    mt-2
+                    font-serif
+                    text-3xl
+                    font-semibold
+                    leading-tight
+                    text-primary-thick
+                    sm:text-4xl
+                    md:text-5xl
+                  "
+                >
+                  {product.product_name}
+                </h1>
+
+                {/* SUBHEADING */}
+
+                <p
+                  className="
+                    mt-2
+                    text-sm
+                    font-medium
+                    text-primary-brown
+                    sm:text-base
+                    md:text-lg
+                  "
+                >
+                  {product.subheading}
+                </p>
+
+                {/* DIVIDER */}
+
+                <div
+                  className="
+                    my-5
+                    h-px
+                    w-full
+                    bg-primary-brown/10
+                    sm:my-7
+                  "
+                />
+
+                {/* DESCRIPTION */}
+
+                <div>
+                  <p
+                    className="
+                      text-[10px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.16em]
+                      text-gray-500
+                      sm:text-xs
+                    "
+                  >
+                    Description
+                  </p>
+
+                  <p
+                    className="
+                      mt-2
+                      text-sm
+                      leading-6
+                      text-gray-600
+                      sm:text-base
+                      sm:leading-7
+                    "
+                  >
+                    {product.description}
+                  </p>
+                </div>
+
+                {/* ================================================= */}
+                {/* SIZE VARIATIONS */}
+                {/* ================================================= */}
+
+                <div className="mt-7 sm:mt-9">
+                  <div
+                    className="
+                      flex
+                      items-center
+                      justify-between
+                      gap-3
+                    "
+                  >
+                    <p
+                      className="
+                        text-[10px]
+                        font-semibold
+                        uppercase
+                        tracking-[0.16em]
+                        text-gray-500
+                        sm:text-xs
+                      "
+                    >
+                      Select Size
+                    </p>
+
+                    {selectedVariation && (
+                      <p
+                        className="
+                          text-xs
+                          font-semibold
+                          text-primary-brown
+                          sm:text-sm
+                        "
+                      >
+                        {selectedVariation.size_variation}
+                      </p>
+                    )}
                   </div>
-                );
-              })}
+
+                  <div
+                    className="
+                      mt-3
+                      flex
+                      flex-wrap
+                      gap-2.5
+                      sm:gap-3
+                    "
+                  >
+                    {product.product_variations?.map(
+                      (variation, index) => {
+                        const isSelected =
+                          selectedVariation?.id
+                            ? selectedVariation.id ===
+                              variation.id
+                            : selectedVariation ===
+                              variation;
+
+                        return (
+                          <button
+                            key={
+                              variation.id ??
+                              `${variation.size_variation}-${index}`
+                            }
+                            type="button"
+                            onClick={() =>
+                              handleVariationSelect(
+                                variation
+                              )
+                            }
+                            className={`
+                              cursor-pointer
+                              rounded-xl
+                              border
+                              px-4
+                              py-2.5
+                              text-sm
+                              font-semibold
+                              transition-all
+                              duration-200
+                              ${
+                                isSelected
+                                  ? "border-primary-thick bg-primary-thick text-white shadow-sm"
+                                  : "border-primary-brown/20 bg-white text-primary-thick hover:border-primary-brown/40 hover:bg-primary-background"
+                              }
+                            `}
+                          >
+                            {variation.size_variation}
+                          </button>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+
+                {/* ================================================= */}
+                {/* PRICE */}
+                {/* ================================================= */}
+
+                <div
+                  className="
+                    mt-7
+                    rounded-2xl
+                    border
+                    border-primary-brown/10
+                    bg-white/70
+                    p-4
+                    sm:mt-8
+                    sm:p-5
+                  "
+                >
+                  <p
+                    className="
+                      text-[10px]
+                      font-semibold
+                      uppercase
+                      tracking-[0.16em]
+                      text-gray-500
+                      sm:text-xs
+                    "
+                  >
+                    Price
+                  </p>
+
+                  <div className="mt-1 flex items-baseline gap-1">
+                    <span
+                      className="
+                        text-lg
+                        font-medium
+                        text-primary-thick
+                        sm:text-xl
+                      "
+                    >
+                      ₹
+                    </span>
+
+                    <span
+                      className="
+                        text-3xl
+                        font-bold
+                        text-primary-thick
+                        sm:text-4xl
+                      "
+                    >
+                      {selectedPrice
+                        ? Number(
+                            selectedPrice
+                          ).toLocaleString("en-IN")
+                        : "—"}
+                    </span>
+                  </div>
+
+                  {selectedVariation && (
+                    <p
+                      className="
+                        mt-1
+                        text-xs
+                        text-gray-500
+                      "
+                    >
+                      For{" "}
+                      {selectedVariation.size_variation}
+                    </p>
+                  )}
+
+                  {/* TOTAL */}
+
+                  <div
+                    className="
+                      mt-5
+                      flex
+                      items-center
+                      justify-between
+                      border-t
+                      border-primary-brown/10
+                      pt-4
+                    "
+                  >
+                    <span
+                      className="
+                        text-sm
+                        font-medium
+                        text-gray-600
+                      "
+                    >
+                      Total Price
+                    </span>
+
+                    <span
+                      className="
+                        text-base
+                        font-bold
+                        text-primary-thick
+                        sm:text-lg
+                      "
+                    >
+                      {selectedPrice
+                        ? `₹${Number(
+                            selectedPrice
+                          ).toLocaleString("en-IN")}`
+                        : "—"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* ================================================= */}
+                {/* SELECTED VARIATION IMAGE INFO */}
+                {/* ================================================= */}
+
+                {selectedVariation && (
+                  <div
+                    className="
+                      mt-5
+                      flex
+                      items-center
+                      gap-2
+                      text-xs
+                      text-gray-500
+                    "
+                  >
+                    <span
+                      className="
+                        h-1.5
+                        w-1.5
+                        rounded-full
+                        bg-primary-thick
+                      "
+                    />
+
+                    Showing images for{" "}
+                    <span className="font-semibold text-primary-thick">
+                      {selectedVariation.size_variation}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* ===================================================== */}
-        {/* FIXED PLACE ORDER */}
-        {/* ===================================================== */}
-
-        <div
-          className="
-            shrink-0
-            border-t
-            border-primary-brown/10
-            bg-white/95
-            py-3
-            backdrop-blur-sm
-            sm:py-4
-            md:py-5
-          "
-        >
-          <div className="flex w-full justify-end">
-
-            <button
-              onClick={handleCreateUserModalOpen}
-              disabled={
-                orderPayload.order_details.length === 0
-              }
-              type="button"
-              className="
-                flex
-                h-11
-                w-full
-                cursor-pointer
-                items-center
-                justify-center
-                gap-2.5
-                rounded-xl
-                bg-primary-thick
-                px-6
-                text-xs
-                font-semibold
-                text-white
-                shadow-sm
-                transition-all
-                duration-200
-                hover:opacity-90
-                hover:shadow-md
-                active:scale-[0.98]
-                disabled:cursor-not-allowed
-                disabled:opacity-50
-                sm:h-12
-                sm:w-auto
-                sm:min-w-[200px]
-                sm:gap-3
-                sm:px-8
-                sm:text-sm
-              "
-            >
-              <ShoppingBag
-                className="
-                  h-3.5
-                  w-3.5
-                  sm:h-4
-                  sm:w-4
-                "
-              />
-
-              <span>Place Order</span>
-
-              <ArrowRight
-                className="
-                  h-3.5
-                  w-3.5
-                  sm:h-4
-                  sm:w-4
-                "
-              />
-            </button>
-
           </div>
         </div>
+      </div>
 
-        {/* ===================================================== */}
-        {/* USER MODAL */}
-        {/* ===================================================== */}
+      {/* ========================================================= */}
+      {/* FLOATING ADD TO CART BUTTON */}
+      {/* ========================================================= */}
 
-        <UserCreateModal
-          open={open}
-          setOpen={setOpen}
-          mode={mode}
-          setMode={setMode}
-          userCreateForm={userCreateForm}
-          setUserCreateForm={setUserCreateForm}
-          singleTab={true}
-          singleTabName={"Create"}
-          onOrderPlaced={handleCreateOrder}
-        />
+      <div
+        className="
+          pointer-events-none
+          fixed
+          bottom-5
+          left-0
+          right-0
+          z-50
+          flex
+          justify-center
+          px-4
+          sm:bottom-7
+        "
+      >
+        <button
+          type="button"
+          onClick={addToCart}
+          disabled={!selectedVariation?.id}
+          className={`
+            pointer-events-auto
+            flex
+            w-full
+            max-w-md
+            cursor-pointer
+            items-center
+            justify-between
+            gap-4
+            rounded-2xl
+            px-5
+            py-3.5
+            text-white
+            shadow-xl
+            shadow-black/15
+            transition-all
+            duration-300
+            sm:px-6
+            sm:py-4
 
+            ${
+              isAdded
+                ? "scale-[1.02] bg-green-600"
+                : "bg-primary-thick hover:-translate-y-0.5 hover:shadow-2xl"
+            }
+
+            disabled:cursor-not-allowed
+            disabled:opacity-50
+          `}
+        >
+          <div className="flex items-center gap-2.5">
+            {isAdded ? (
+              <Check
+                className="
+                  h-5
+                  w-5
+                  animate-bounce
+                "
+              />
+            ) : (
+              <ShoppingCart className="h-5 w-5" />
+            )}
+
+            <span className="text-sm font-semibold sm:text-base">
+              {isAdded
+                ? "Added to Cart"
+                : "Add to Cart"}
+            </span>
+          </div>
+
+          <span className="text-base font-bold sm:text-lg">
+            {selectedPrice
+              ? `₹${Number(
+                  selectedPrice
+                ).toLocaleString("en-IN")}`
+              : "—"}
+          </span>
+        </button>
       </div>
     </section>
   );

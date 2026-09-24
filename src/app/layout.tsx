@@ -1,11 +1,32 @@
 import type { Metadata } from "next";
-import { Urbanist } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import "./nav-link.css";
 import { cn } from "@/lib/utils";
 
-const urbanist = Urbanist({
-  subsets: ["latin"],
+const urbanist = localFont({
+  src: [
+    {
+      path: "../fonts/Urbanist-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/Urbanist-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../fonts/Urbanist-SemiBold.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../fonts/Urbanist-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
   variable: "--font-urbanist",
   display: "swap",
 });

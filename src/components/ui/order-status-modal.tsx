@@ -97,10 +97,6 @@ export default function OrderStatusModal({
           className="space-y-5 pt-2"
         >
 
-          {/* ================================================= */}
-          {/* PAYMENT STATUS */}
-          {/* ================================================= */}
-
           <div className="space-y-2">
 
             <Label htmlFor="payment-status">

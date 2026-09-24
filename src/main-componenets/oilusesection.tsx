@@ -11,7 +11,7 @@ export default function OilUseSection({
   const router = useRouter();
 
   const handleShopNow = () => {
-    router.push("/shop-products");
+    router.push("/main-products");
   };
 
   return (

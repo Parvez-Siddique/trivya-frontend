@@ -10,6 +10,7 @@ export type CustomerOrderDetailDTO = {
   product: number;
   product_name: string;
   product_image: string | null;
+  product_size : string | null;
   quantity: number;
   price: string;
 };

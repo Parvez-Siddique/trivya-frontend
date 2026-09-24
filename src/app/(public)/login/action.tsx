@@ -34,6 +34,7 @@ export async function loginUser(payload: LoginUserData) {
         headers: {
           "Content-Type": "application/json",
         },
+        requiresAuth : false
       }
     );
 
