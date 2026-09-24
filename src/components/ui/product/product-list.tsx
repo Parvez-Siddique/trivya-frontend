@@ -89,16 +89,6 @@ export default function ProductList({
     },
 
     {
-        key: "price",
-        title: "Price",
-        render: (value) => (
-        <span className="font-medium">
-            ₹{Number(value).toFixed(2)}
-        </span>
-        ),
-    },
-
-    {
         key: "created_at",
         title: "Created At",
         render: (value) =>
