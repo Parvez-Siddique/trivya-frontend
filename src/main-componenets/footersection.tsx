@@ -140,7 +140,7 @@ export default function FooterSection() {
             {/* Shop Link */}
             <div className="mt-8">
               <a
-                href="/shop-products"
+                href="/main-products"
                 className="inline-flex items-center rounded-xl bg-primary-thick px-6 py-3 text-sm font-medium text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
               >
                 Shop Our Products
