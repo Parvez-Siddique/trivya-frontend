@@ -263,8 +263,7 @@ export default function ShopProducts({
   // PRICE
   // =========================================================
 
-  const selectedPrice =
-    selectedVariation?.price_variation ?? "";
+  const selectedPrice = selectedVariation?.price_variation ?? "";
 
   // =========================================================
   // COMPONENT
