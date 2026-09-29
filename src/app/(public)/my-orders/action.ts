@@ -20,13 +20,26 @@ export type CustomerOrderListDTO = {
   order_code: string;
   payment_status: string;
   order_status: string;
+
   customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+
+  customer_street: string;
+  customer_area: string;
+  customer_city: string;
+  customer_state: string;
+  customer_pincode: string;
+
   total_quantity: number;
   total_price: string;
+
   order_details: CustomerOrderDetailDTO[];
+
   created_at: string;
   updated_at: string;
 };
+
 
 export type CustomerOrderListParams = {
   page?: number;

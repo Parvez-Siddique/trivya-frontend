@@ -7,5 +7,6 @@ export default async function Page() {
     page_size: 10,
   });
 
+
   return <OrdersList customerOrders={customerOrders.data} />;
 }

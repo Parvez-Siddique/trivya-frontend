@@ -11,13 +11,13 @@ export default function BannerSection() {
         {/* Large screens */}
         <source
           media="(min-width: 1024px)"
-          srcSet="/product/banner-large.jpeg"
+          srcSet="/product/banner-mediium.jpeg"
         />
 
         {/* Medium screens */}
         <source
           media="(min-width: 640px)"
-          srcSet="/product/banner-medium.jpeg"
+          srcSet="/product/banner-small.jpeg"
         />
 
         {/* Small screens / Mobile */}

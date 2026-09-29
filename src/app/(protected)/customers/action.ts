@@ -4,10 +4,19 @@ import { serverAPI } from "@/lib/serverAPI";
 
 export type Users = {
   username: string;
+
   firstName: string | null;
   lastName: string | null;
+
   email: string;
   phoneNumber: string | null;
+
+  streetName: string | null;
+  area: string | null;
+  city: string | null;
+  state: string | null;
+  pincode: string | null;
+
   user_type: string;
 };
 

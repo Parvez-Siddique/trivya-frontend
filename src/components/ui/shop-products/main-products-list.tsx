@@ -84,8 +84,6 @@ export default function MainProducts({
         page_size: 10,
       });
 
-      console.log(response,"DOFKOIJIJIJIWJFIWJFIJWF")
-
       if (response.success) {
         setProducts(response.data ?? []);
       } else {

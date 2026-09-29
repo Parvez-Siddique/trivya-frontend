@@ -241,14 +241,45 @@ export default function OrdersList({customerOrders, pagination, onPageChange}: C
     },
 
     {
-      key: "customer_name",
-      title: "Customer",
-      render: (value) => (
-        <span className="font-medium">
-          {String(value || "-")}
-        </span>
-      ),
-    },
+  key: "customer_name",
+  title: "Customer",
+  render: (_, order) => (
+    <div className="min-w-[280px] max-w-[360px] py-1">
+
+      {/* Customer Name */}
+      <div className="font-semibold text-sm text-foreground">
+        {order.customer_name || "-"}
+      </div>
+
+      {/* Phone */}
+      <div className="mt-1 text-xs text-muted-foreground">
+        📞 {order.customer_phone || "-"}
+      </div>
+
+      {/* Email */}
+      <div className="mt-0.5 truncate text-xs text-muted-foreground">
+        ✉️ {order.customer_email || "-"}
+      </div>
+
+      {/* Address */}
+      <div className="mt-2 text-xs leading-5 text-muted-foreground">
+        <span className="font-medium text-foreground">
+          📍 Address:
+        </span>{" "}
+        {order.customer_street && `${order.customer_street}, `}
+        {order.customer_area && `${order.customer_area}, `}
+        {order.customer_city && `${order.customer_city} - `}
+        {order.customer_pincode && order.customer_pincode}
+        {order.customer_state && (
+          <span className="block">
+            {order.customer_state}
+          </span>
+        )}
+      </div>
+
+    </div>
+  ),
+},
 
     {
       key: "total_quantity",

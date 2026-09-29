@@ -32,76 +32,136 @@ export default function CustomersList({customerList, pagination, onPageChange}: 
   };
 
   const columns: Column<Users>[] = [
-    {
-      key: "username",
-      title: "Username",
-      render: (value) => (
-        <span className="font-medium">
-          {String(value || "-")}
-        </span>
-      ),
-    },
+  {
+    key: "username",
+    title: "Username",
+    render: (value) => (
+      <span className="font-medium">
+        {String(value || "-")}
+      </span>
+    ),
+  },
 
-    {
-      title: "Name",
-      render: (_, customer) => {
-        const fullName = [
-          customer.firstName,
-          customer.lastName,
-        ]
-          .filter(Boolean)
-          .join(" ");
+  // =========================================================
+  // CUSTOMER
+  // =========================================================
+  {
+    title: "Customer",
+    render: (_, customer) => {
+      const fullName = [
+        customer.firstName,
+        customer.lastName,
+      ]
+        .filter(Boolean)
+        .join(" ");
 
-        return (
-          <span className="font-medium">
+      return (
+        <div className="min-w-[180px]">
+          <p className="font-semibold text-sm">
             {fullName || "-"}
-          </span>
-        );
-      },
+          </p>
+        </div>
+      );
     },
+  },
 
-    {
-      key: "email",
-      title: "Email",
-      render: (value) => (
-        <span>
-          {String(value || "-")}
+  // =========================================================
+  // CONTACT
+  // =========================================================
+  {
+    title: "Contact",
+    render: (_, customer) => (
+      <div className="min-w-[220px] space-y-1">
+        <p className="text-sm">
+          {customer.email || "-"}
+        </p>
+
+        <p className="text-xs text-muted-foreground">
+          {customer.phoneNumber || "-"}
+        </p>
+      </div>
+    ),
+  },
+
+  // =========================================================
+  // ADDRESS
+  // =========================================================
+  {
+    title: "Address",
+    render: (_, customer) => (
+      <div className="min-w-[280px] max-w-[360px] text-sm leading-5">
+
+        {/* Street */}
+        {customer.streetName && (
+          <p>
+            {customer.streetName}
+          </p>
+        )}
+
+        {/* Area */}
+        {customer.area && (
+          <p>
+            {customer.area}
+          </p>
+        )}
+
+        {/* City + Pincode */}
+        {(customer.city || customer.pincode) && (
+          <p>
+            {customer.city || ""}
+            {customer.city && customer.pincode
+              ? ` - ${customer.pincode}`
+              : customer.pincode || ""}
+          </p>
+        )}
+
+        {/* State */}
+        {customer.state && (
+          <p className="text-xs text-muted-foreground">
+            {customer.state}
+          </p>
+        )}
+
+        {/* No Address */}
+        {!customer.streetName &&
+          !customer.area &&
+          !customer.city &&
+          !customer.state &&
+          !customer.pincode && (
+            <span className="text-muted-foreground">
+              No address available
+            </span>
+          )}
+
+      </div>
+    ),
+  },
+
+  // =========================================================
+  // USER TYPE
+  // =========================================================
+  {
+    key: "user_type",
+    title: "User Type",
+    render: (value) => {
+      const userType = String(value).toUpperCase();
+
+      return (
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
+            userType === "CUSTOMER"
+              ? "bg-blue-100 text-blue-700"
+              : userType === "ADMIN"
+              ? "bg-purple-100 text-purple-700"
+              : "bg-gray-100 text-gray-700"
+          }`}
+        >
+          {userType}
         </span>
-      ),
+      );
     },
-
-    {
-      key: "phoneNumber",
-      title: "Phone Number",
-      render: (value) => (
-        <span>
-          {String(value || "-")}
-        </span>
-      ),
-    },
-
-    {
-      key: "user_type",
-      title: "User Type",
-      render: (value) => {
-        const userType = String(value).toUpperCase();
-
-        return (
-          <span
-            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${
-              userType === "CUSTOMER"
-                ? "bg-blue-100 text-blue-700"
-                : userType === "ADMIN"
-                ? "bg-purple-100 text-purple-700"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            {userType}
-          </span>
-        );
-      },
-    },
-  ];
+  },
+];
 
   return (
     <div className="w-full space-y-6">
