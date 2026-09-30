@@ -37,7 +37,7 @@ export default function FooterSection() {
                 <p>
                   13/A3, Jose Garden,
                   <br />
-                  Urumandampalaya G.N.Mills post, Coimbatore,
+                  Urumandampalayam G.N.Mills post, Coimbatore,
                   <br />
                   Tamil Nadu, India
                 </p>
