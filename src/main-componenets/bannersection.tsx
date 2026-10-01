@@ -11,20 +11,20 @@ export default function BannerSection() {
         {/* Large screens */}
         <source
           media="(min-width: 1024px)"
-          srcSet="/product/banner-mediium.jpeg"
+          srcSet="/product/banner-large.jpeg"
         />
 
         {/* Medium screens */}
         <source
           media="(min-width: 640px)"
-          srcSet="/product/banner-small.jpeg"
+          srcSet="/product/banner-simall.jpeg"
         />
 
         {/* Small screens / Mobile */}
         <img
-          src="/product/banner-small.jpeg"
+          src="/product/banner-simall.jpeg"
           alt="Trivya Banner"
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-contain"
         />
       </picture>
     </section>

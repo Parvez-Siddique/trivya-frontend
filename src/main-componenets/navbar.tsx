@@ -143,7 +143,7 @@ export default function Navbar({userSession}: {userSession: any}) {
               </li>
 
               <li>
-                <a href="#bannerSection" className="nav-link">
+                <a href="/main-products" className="nav-link">
                   Shop
                 </a>
               </li>
