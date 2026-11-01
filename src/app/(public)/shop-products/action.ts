@@ -140,6 +140,8 @@ export async function createOrder(data: CreateOrderPayload | null | undefined) {
 
 type PlaceOrderResponse = {
   status: "SUCCESS" | "FAILED";
+  order_id?: number;
+  order_code?: string;
 };
 
 export async function placeOrder(
@@ -163,8 +165,6 @@ export async function placeOrder(
     return response;
 
   } catch (error) {
-
-    console.error("Failed to place order:", error);
 
     return {
       status: "FAILED",

@@ -2,10 +2,6 @@
 
 import { serverAPI } from "@/lib/serverAPI";
 
-/* =========================
-   FAQ Types
-========================= */
-
 export type CreateFAQData = {
   faq_name: string;
   faq_question: string;

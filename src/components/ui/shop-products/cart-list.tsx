@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
+  Info,
   Minus,
   Plus,
   ShoppingCart,
@@ -18,6 +19,7 @@ import {
 
 import { toast } from "sonner";
 import UserCreateModal from "@/components/ui/user-create-modal";
+import { createPayment, verifyPayment } from "@/app/(public)/razorpay/action";
 
 import {
   CreateOrderPayload,
@@ -26,6 +28,7 @@ import {
   PlaceOrderPayload,
   placeOrder
 } from "@/app/(public)/shop-products/action";
+import { loadRazorpay } from "@/lib/razorpay";
 
 const CART_STORAGE_KEY = "trivya_cart";
 
@@ -326,7 +329,6 @@ export default function CartList({
         toast.error("Cart is empty", {
           description: "Please add products before placing the order.",
         });
-
         return;
       }
 
@@ -336,11 +338,9 @@ export default function CartList({
         toast.error("Cart is empty", {
           description: "Please add products before placing the order.",
         });
-
         return;
       }
-
-
+      
       const orderDetails: OrderDetails[] = cart.map((cartItem) => {
         const productDetails = cartDetails.find(
           (item) =>
@@ -356,10 +356,6 @@ export default function CartList({
         };
       });
 
-      // =========================================================
-      // CALCULATE ORDER TOTALS
-      // =========================================================
-
       const totalQuantity = orderDetails.reduce(
         (total, item) => total + item.quantity,
         0
@@ -370,9 +366,12 @@ export default function CartList({
         0
       );
 
-      // =========================================================
-      // CREATE ORDER PAYLOAD
-      // =========================================================
+      if (totalQuantity <= 0 || totalPrice <= 0) {
+        toast.error("Invalid Order", {
+          description: "Please check your cart and try again.",
+        });
+        return;
+      }
 
       const orderData: CreateOrderPayload = {
         user: 0,
@@ -382,88 +381,156 @@ export default function CartList({
         order_details: orderDetails,
       };
 
-      // =========================================================
-      // UPDATE STATE
-      // =========================================================
-
       setOrderPayload(orderData);
-
-      // =========================================================
-      // CREATE FINAL PAYLOAD
-      // =========================================================
 
       const payload: PlaceOrderPayload = {
         customer_data: userCreateForm,
         order_data: orderData,
       };
 
-      // =========================================================
-      // PLACE ORDER
-      // =========================================================
+      const orderResponse = await placeOrder(payload);
 
-      const response = await placeOrder(payload);
-
-      if (response.status !== "SUCCESS") {
-        toast.error("Order Placement Failed", {
-          description: "Unable to place the order.",
+      if (orderResponse.status !== "SUCCESS") {
+        toast.error("Order Creation Failed", {
+          description: "Unable to create your order.",
         });
-
         return;
       }
 
-      // =========================================================
-      // SUCCESS
-      // =========================================================
+      const applicationOrderId = orderResponse.order_id;
 
-      toast.success("Order Placed Successfully", {
-        description: "Your order has been placed successfully.",
-      });
+      if (!applicationOrderId) {
+        toast.error("Order Error", {
+          description: "Unable to retrieve the order ID.",
+        });
+        return;
+      }
 
-      // Close modal
+      const razorpayLoaded = await loadRazorpay();
+
+      if (!razorpayLoaded) {
+        toast.error("Payment Gateway Error", {
+          description: "Unable to load Razorpay. Please try again.",
+        });
+        return;
+      }
+      const paymentResponse = await createPayment(applicationOrderId);
+
+      if (paymentResponse.status !== "SUCCESS" || !paymentResponse) {
+        toast.error("Payment Initialization Failed");
+        return;
+      }
+
+      const paymentData = paymentResponse;
+
       setOpen(false);
 
-      // Clear cart
-      sessionStorage.removeItem(CART_STORAGE_KEY);
+      const razorpayOptions: RazorpayOptions = {
+        key: paymentData.key,
+        amount: paymentData.amount,
+        currency: paymentData.currency,
+        name: "Trivya Care",
+        description: "Purchase Payment",
+        order_id: paymentData.razorpay_order_id,
 
-      // Clear UI cart
-      setCartDetails([]);
+        prefill: {
+          name: `${userCreateForm.firstName} ${userCreateForm.lastName}`,
+          email: userCreateForm.email,
+          contact: userCreateForm.phoneNumber,
+        },
 
-      // Reset customer form
-      setUserCreateForm({
-        firstName: "",
-        lastName: "",
-        email: "",
-        phoneNumber: "",
-        user_type: "CUSTOMER",
-        streetName: "",
-        area: "",
-        city: "",
-        state: "",
-        pincode: "",
+        theme: {
+          color: "#16a34a",
+        },
+
+        handler: async (razorpayResponse) => {
+          try {
+            const verificationResponse = await verifyPayment({
+              order_id: applicationOrderId,
+              razorpay_order_id: razorpayResponse.razorpay_order_id,
+              razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+              razorpay_signature: razorpayResponse.razorpay_signature,
+            });
+
+            if (verificationResponse.status !== "SUCCESS") {
+              toast.error("Payment Verification Failed", {
+                description:
+                  "We could not verify your payment. Please contact support if money was deducted.",
+              });
+              return;
+            }
+
+            // =================================================
+            // 10. CLEAR CART ONLY AFTER VERIFIED PAYMENT
+            // =================================================
+
+            toast.success("Payment Successful", {
+              description: "Your order has been placed successfully.",
+            });
+
+            sessionStorage.removeItem(CART_STORAGE_KEY);
+            setCartDetails([]);
+
+            setUserCreateForm({
+              firstName: "",
+              lastName: "",
+              email: "",
+              phoneNumber: "",
+              user_type: "CUSTOMER",
+              streetName: "",
+              area: "",
+              city: "",
+              state: "",
+              pincode: "",
+            });
+
+            setOrderPayload({
+              user: 0,
+              payment_status: "PENDING",
+              total_quantity: "0",
+              total_price: "0",
+              order_details: [],
+            });
+          } catch (error) {
+            console.error("Payment verification error:", error);
+
+            toast.error("Verification Error", {
+              description:
+                "Payment verification could not be completed. Please contact support before retrying.",
+            });
+          }
+        },
+
+        // =======================================================
+        // 11. CHECKOUT DISMISS CALLBACK
+        // =======================================================
+
+        modal: {
+          ondismiss: () => {
+            toast.info("Payment Cancelled", {
+              description: "Your cart has been saved. You can try again.",
+            });
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(razorpayOptions);
+
+      razorpay.on("payment.failed", () => {
+        toast.error("Payment Failed", {
+          description: "Your payment could not be completed. Please try again.",
+        });
       });
 
-      // Reset order payload
-      setOrderPayload({
-        user: 0,
-        payment_status: "PENDING",
-        total_quantity: "0",
-        total_price: "0",
-        order_details: [],
-      });
+      razorpay.open();
     } catch (error) {
       console.error("Order creation error:", error);
 
-      toast.error("Order Placement Failed", {
-        description: "Something went wrong while placing the order.",
+      toast.error("Order Processing Failed", {
+        description: "Something went wrong. Please try again.",
       });
     }
   };
-
-
-
-  // =========================================================
-  // TOTAL PRICE
-  // =========================================================
 
   const totalPrice = useMemo(() => {
     return cartDetails.reduce(
@@ -1083,6 +1150,8 @@ export default function CartList({
             )}
           </div>
 
+          
+
           {/* ================================================= */}
           {/* ORDER SUMMARY */}
           {/* ================================================= */}
@@ -1215,6 +1284,29 @@ export default function CartList({
                 </span>
               </div>
             </div>
+
+
+            <div className="mt-5 rounded-xl border
+              border-amber-300 bg-amber-50 p-3.5">
+              <div className="flex items-start gap-2.5">
+                <Info className="mt-0.5 h-5 w-5
+                  shrink-0 text-amber-700"/>
+
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">
+                    Important Payment Notice
+                  </p>
+
+                  <p className="mt-1 text-xs leading-5 text-amber-800">
+                    Cash on Delivery (COD) is currently
+                    unavailable. Orders will be confirmed
+                    only after successful online payment.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            
 
             {/* CHECKOUT */}
 

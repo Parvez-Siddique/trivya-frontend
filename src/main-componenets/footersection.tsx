@@ -5,7 +5,6 @@ import { FaFacebook, FaInstagram, FaPhoneAlt, FaYoutube  } from "react-icons/fa"
 import { FiMapPin } from "react-icons/fi";
 import { IoIosMail } from "react-icons/io";
 
-
 export default function FooterSection() {
   return (
     <footer className="relative w-full border-t border-primary-brown/20">

@@ -123,7 +123,7 @@ export default function Navbar({userSession}: {userSession: any}) {
                   About Us
                 </a>
               </li>
-
+ 
               <li>
                 <a href="#ingredients" className="nav-link">
                   Ingredients
