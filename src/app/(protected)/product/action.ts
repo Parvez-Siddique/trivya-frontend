@@ -27,6 +27,7 @@ export type ProductVariation = {
   size_variation: string;
 
   price_variation: string;
+  non_discounted_price: string;
 
   variation_image_one: string | null;
   variation_image_two: string | null;

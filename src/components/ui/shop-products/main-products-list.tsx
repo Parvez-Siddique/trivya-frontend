@@ -83,7 +83,6 @@ export default function MainProducts({
         page: 0,
         page_size: 10,
       });
-
       if (response.success) {
         setProducts(response.data ?? []);
       } else {

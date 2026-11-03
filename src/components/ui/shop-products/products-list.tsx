@@ -34,18 +34,13 @@ export default function ShopProducts({
 
   const product = productDetails;
 
-  // =========================================================
-  // SELECTED VARIATION
-  // =========================================================
+  console.log("productDetails", productDetails);
+
 
   const [selectedVariation, setSelectedVariation] =
     useState<ProductVariation | null>(
       product.product_variations?.[0] ?? null
     );
-
-  // =========================================================
-  // CART COUNT
-  // =========================================================
 
   const [cartCount, setCartCount] = useState<number>(() => {
     if (typeof window === "undefined") {
@@ -74,24 +69,12 @@ export default function ShopProducts({
 
   const [isAdded, setIsAdded] = useState(false);
 
-  // =========================================================
-  // IMAGE GALLERY
-  // =========================================================
-
   const galleryImages = useMemo(() => {
     const images: string[] = [];
-
-    // -------------------------------------------------------
-    // MAIN PRODUCT IMAGE
-    // -------------------------------------------------------
 
     if (product.product_image) {
       images.push(product.product_image);
     }
-
-    // -------------------------------------------------------
-    // SELECTED VARIATION IMAGES
-    // -------------------------------------------------------
 
     if (selectedVariation) {
       const variationImages = [
@@ -119,9 +102,6 @@ export default function ShopProducts({
     product.product_image
   );
 
-  // =========================================================
-  // CHANGE MAIN IMAGE WHEN VARIATION CHANGES
-  // =========================================================
 
   useEffect(() => {
     if (!selectedVariation) {
@@ -140,10 +120,6 @@ export default function ShopProducts({
     );
   }, [selectedVariation, product.product_image]);
 
-  // =========================================================
-  // SAFETY
-  // =========================================================
-
   useEffect(() => {
     if (
       selectedImage &&
@@ -161,19 +137,11 @@ export default function ShopProducts({
     product.product_image,
   ]);
 
-  // =========================================================
-  // SELECT VARIATION
-  // =========================================================
-
   const handleVariationSelect = (
     variation: ProductVariation
   ) => {
     setSelectedVariation(variation);
   };
-
-  // =========================================================
-  // ADD TO CART
-  // =========================================================
 
   const addToCart = () => {
     if (!product.id) {
@@ -259,15 +227,8 @@ export default function ShopProducts({
     }
   };
 
-  // =========================================================
-  // PRICE
-  // =========================================================
 
   const selectedPrice = selectedVariation?.price_variation ?? "";
-
-  // =========================================================
-  // COMPONENT
-  // =========================================================
 
   return (
     <section
@@ -294,9 +255,6 @@ export default function ShopProducts({
           flex-col
         "
       >
-        {/* ================================================= */}
-        {/* HEADER */}
-        {/* ================================================= */}
 
         <div
           className="
@@ -473,10 +431,6 @@ export default function ShopProducts({
               "
             >
 
-              {/* ================================================= */}
-              {/* PRODUCT GALLERY */}
-              {/* ================================================= */}
-
               <div
                 className="
                   w-full
@@ -530,10 +484,6 @@ export default function ShopProducts({
                       blur-3xl
                     "
                   />
-
-                  {/* ================================================= */}
-                  {/* MAIN IMAGE */}
-                  {/* ================================================= */}
 
                   <div
                     className="
@@ -921,10 +871,6 @@ export default function ShopProducts({
                   </div>
                 </div>
 
-                {/* ================================================= */}
-                {/* PRICE */}
-                {/* ================================================= */}
-
                 <div
                   className="
                     mt-7
@@ -950,18 +896,9 @@ export default function ShopProducts({
                     Price
                   </p>
 
-                  <div className="mt-1 flex items-baseline gap-1">
-                    <span
-                      className="
-                        text-lg
-                        font-medium
-                        text-primary-thick
-                        sm:text-xl
-                      "
-                    >
-                      ₹
-                    </span>
+                  <div className="mt-1 flex flex-wrap items-baseline gap-2">
 
+                    {/* Discounted Price */}
                     <span
                       className="
                         text-3xl
@@ -971,28 +908,36 @@ export default function ShopProducts({
                       "
                     >
                       {selectedPrice
-                        ? Number(
-                            selectedPrice
-                          ).toLocaleString("en-IN")
+                        ? `₹${Number(selectedPrice).toLocaleString("en-IN")}`
                         : "—"}
                     </span>
+
+                    {/* Original Price */}
+                    {selectedVariation?.non_discounted_price && (
+                      <span
+                        className="
+                          text-lg
+                          font-medium
+                          text-gray-400
+                          line-through
+                          sm:text-xl
+                        "
+                      >
+                        ₹{Number(
+                          selectedVariation.non_discounted_price
+                        ).toLocaleString("en-IN")}
+                      </span>
+                    )}
+
                   </div>
 
                   {selectedVariation && (
-                    <p
-                      className="
-                        mt-1
-                        text-xs
-                        text-gray-500
-                      "
-                    >
-                      For{" "}
-                      {selectedVariation.size_variation}
+                    <p className="mt-1 text-xs text-gray-500">
+                      For {selectedVariation.size_variation}
                     </p>
                   )}
 
                   {/* TOTAL */}
-
                   <div
                     className="
                       mt-5
@@ -1004,36 +949,17 @@ export default function ShopProducts({
                       pt-4
                     "
                   >
-                    <span
-                      className="
-                        text-sm
-                        font-medium
-                        text-gray-600
-                      "
-                    >
+                    <span className="text-sm font-medium text-gray-600">
                       Total Price
                     </span>
 
-                    <span
-                      className="
-                        text-base
-                        font-bold
-                        text-primary-thick
-                        sm:text-lg
-                      "
-                    >
+                    <span className="text-base font-bold text-primary-thick sm:text-lg">
                       {selectedPrice
-                        ? `₹${Number(
-                            selectedPrice
-                          ).toLocaleString("en-IN")}`
+                        ? `₹${Number(selectedPrice).toLocaleString("en-IN")}`
                         : "—"}
                     </span>
                   </div>
                 </div>
-
-                {/* ================================================= */}
-                {/* SELECTED VARIATION IMAGE INFO */}
-                {/* ================================================= */}
 
                 {selectedVariation && (
                   <div

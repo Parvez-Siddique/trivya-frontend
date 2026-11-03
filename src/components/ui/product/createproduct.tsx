@@ -34,7 +34,7 @@ type VariationImage = {
 type ProductVariation = {
   size_variation: string;
   price_variation: string;
-
+  non_discounted_price?: string;
   variation_image_one: VariationImage;
   variation_image_two: VariationImage;
   variation_image_three: VariationImage;
@@ -45,7 +45,7 @@ type ProductVariation = {
 const createEmptyVariation = (): ProductVariation => ({
   size_variation: "",
   price_variation: "",
-
+  non_discounted_price: "",
   variation_image_one: {
     file: null,
     preview: null,
@@ -120,6 +120,7 @@ export default function CreateProductPage({
       productDetails.product_variations.map((variation) => ({
         size_variation: variation.size_variation,
         price_variation: variation.price_variation,
+        non_discounted_price: variation.non_discounted_price ?? "",
 
         variation_image_one: {
           file: null,
@@ -199,7 +200,7 @@ export default function CreateProductPage({
 
   const handleVariationChange = (
     index: number,
-    field: "size_variation" | "price_variation",
+    field: "size_variation" | "price_variation" | "non_discounted_price",
     value: string
   ) => {
     setVariations((previous) => {
@@ -433,6 +434,7 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     (variation) => ({
       size_variation: variation.size_variation.trim(),
       price_variation: variation.price_variation.trim(),
+      non_discounted_price: variation.non_discounted_price?.trim() || "",
     })
   );
 
@@ -451,13 +453,6 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     JSON.stringify(productVariationData)
   );
 
-  /*
-   * Main product image
-   *
-   * Only append when a new image has been selected.
-   * In edit mode, if no new image is selected,
-   * backend can retain the existing image.
-   */
   if (imageFile instanceof File) {
     requestFormData.append(
       "product_image",
@@ -601,13 +596,6 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 };
 
 
-
-  /*
-   * --------------------------------------------------
-   * RENDER
-   * --------------------------------------------------
-   */
-
   return (
     <div className="w-full space-y-6">
 
@@ -650,11 +638,6 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
             onSubmit={handleSubmit}
             className="space-y-6"
           >
-
-            {/* -------------------------------- */}
-            {/* Product Name */}
-            {/* -------------------------------- */}
-
             <div className="space-y-2">
 
               <Label htmlFor="product_name">
@@ -786,17 +769,11 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 
             </div>
 
-
-            {/* -------------------------------- */}
-            {/* Product Variations */}
-            {/* -------------------------------- */}
-
             <div className="space-y-4">
 
               <div className="flex items-center justify-between">
 
                 <div>
-
                   <Label>
                     Product Variations
                   </Label>
@@ -820,10 +797,7 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
                 </Button>
 
               </div>
-
-
-              {/* Variation cards */}
-
+              
               <div className="space-y-6">
 
                 {variations.map(
@@ -894,39 +868,78 @@ const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 
                         {/* Price */}
 
-                        <div className="space-y-2">
+                        <div className="flex-row space-y-2">
 
-                          <Label>
-                            Price
-                          </Label>
+                          <div className="flex items-center justify-between">
 
-                          <div className="relative">
+                            <Label>
+                              Price
+                            </Label>
 
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                              ₹
-                            </span>
+                            <div className="relative">
 
-                            <Input
-                              value={
-                                variation.price_variation
-                              }
-                              onChange={(event) =>
-                                handleVariationChange(
-                                  variationIndex,
-                                  "price_variation",
-                                  event.target.value
-                                )
-                              }
-                              type="text"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              className="pl-8"
-                              disabled={loading}
-                            />
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                ₹
+                              </span>
+
+                              <Input
+                                value={
+                                  variation.price_variation
+                                }
+                                onChange={(event) =>
+                                  handleVariationChange(
+                                    variationIndex,
+                                    "price_variation",
+                                    event.target.value
+                                  )
+                                }
+                                type="text"
+                                min="0"
+                                step="1"
+                                placeholder="0.00"
+                                className="pl-8"
+                                disabled={loading}
+                              />
+
+                            </div>
 
                           </div>
 
+
+                          <div className="flex items-center justify-between">
+
+                            <Label>
+                              Non-Discounted Price
+                            </Label>
+
+                            <div className="relative">
+
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                                ₹
+                              </span>
+
+                              <Input
+                                value={
+                                  variation.non_discounted_price
+                                }
+                                onChange={(event) =>
+                                  handleVariationChange(
+                                    variationIndex,
+                                    "non_discounted_price",
+                                    event.target.value
+                                  )
+                                }
+                                type="text"
+                                min="0"
+                                step="1"
+                                placeholder="0.00"
+                                className="pl-8"
+                                disabled={loading}
+                              />
+
+                            </div>
+
+                          </div>
                         </div>
 
 
